@@ -76,7 +76,7 @@ export const CONFIG = {
     LEVEL: {
         YARN_MULTIPLIER: 3,      // Need 3x water depth in yarn to cross
         YARN_PER_LEVEL: 10,      // Each level adds 10 more yarn required
-        BASE_YARN_REQUIRED: 75   // Level 1 base requirement (WATER.DEPTH * 3)
+        BASE_YARN_REQUIRED: 10   // Level 1 base requirement
     },
     
     // Difficulty Patterns
