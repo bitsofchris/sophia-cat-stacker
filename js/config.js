@@ -12,7 +12,7 @@ export const CONFIG = {
     LANE_SWITCH_DURATION: 150,   // milliseconds
     
     // Distances
-    LEVEL_END_DISTANCE: 100,
+    LEVEL_END_DISTANCE: 150,
     SPAWN_AHEAD_DISTANCE: 50,
     DESPAWN_BEHIND_DISTANCE: 10,
     ROW_SPACING: 3,              // distance between spawn rows
@@ -63,7 +63,7 @@ export const CONFIG = {
         DEPTH: 25,                // Longer gap
         COLOR: 0x0a1929,          // Dark navy blue
         OPACITY: 0.95,
-        START_Z: -105
+        START_Z: -155             // Moved to match longer level
     },
     
     // Scoring
@@ -72,19 +72,26 @@ export const CONFIG = {
     DISTANCE_POINTS: 1,
     YARN_BRIDGE_DISTANCE: 1,     // Each yarn = 1 unit of bridge
     
+    // Level System
+    LEVEL: {
+        YARN_MULTIPLIER: 3,      // Need 3x water depth in yarn to cross
+        YARN_PER_LEVEL: 10,      // Each level adds 10 more yarn required
+        BASE_YARN_REQUIRED: 75   // Level 1 base requirement (WATER.DEPTH * 3)
+    },
+    
     // Difficulty Patterns
     // Y = Yarn, T = Triangle, X = Empty
     // RULE: Always at least one safe lane (X or Y) - never all T's
     PATTERNS: {
-        easy: ['YXY', 'YYX', 'XYY', 'XXX', 'YXX', 'XYX', 'YYY', 'XXY'],
-        medium: ['YTX', 'XTY', 'YXX', 'XYX', 'TXX', 'XXY', 'YXY', 'XXT'],
-        hard: ['TYX', 'XTY', 'TXX', 'YTX', 'XYT', 'TXY', 'YXT', 'XXY']
+        easy: ['YYY', 'YYX', 'YYY', 'XYY', 'YXY', 'YYY', 'YYX', 'YYY'],   // All yarn, no cones
+        medium: ['YYX', 'XYY', 'YXY', 'YYY', 'XYX', 'YYX', 'YXY', 'TXY'], // Only 1 cone pattern
+        hard: ['YTX', 'XYY', 'YXY', 'TXX', 'YYX', 'XYT', 'YYX', 'YXY']    // Only 2 cone patterns
     },
     
     // Difficulty thresholds (by distance traveled)
     DIFFICULTY: {
-        EASY_END: 30,
-        MEDIUM_END: 60
+        EASY_END: 80,             // Stay easy for first 80 distance (53% of level)
+        MEDIUM_END: 130           // Medium until 130, then hard for final stretch
     },
     
     // Camera

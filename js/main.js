@@ -26,7 +26,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Start game after fade animation
         setTimeout(() => {
             titleScreen.classList.add('hidden');
+            
+            // Show level screen
+            game.showLevelScreen();
             game.start();
+            
+            // Auto-hide level screen after a delay
+            setTimeout(() => {
+                game.hideLevelScreen();
+            }, 1500);
         }, 500);
     };
     

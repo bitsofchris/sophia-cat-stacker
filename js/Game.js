@@ -4,6 +4,7 @@ import { Cat } from './entities/Cat.js';
 import { Spawner } from './systems/Spawner.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { LevelManager } from './systems/LevelManager.js';
+import { Snow } from './systems/Snow.js';
 
 export class Game {
     constructor(canvas) {
@@ -14,10 +15,16 @@ export class Game {
         this.isPaused = false;
         this.phase = 'collection';  // 'collection', 'transition', 'water', 'end'
         
+        // Level system
+        this.currentLevel = 1;
+        
         // Stun state (when hitting obstacles)
         this.isStunned = false;
         this.stunEndTime = 0;
         this.stunDuration = 500;  // milliseconds
+        
+        // Level screen pause (don't scroll while showing level number)
+        this.levelScreenVisible = false;
         
         // Stats
         this.distanceTraveled = 0;
@@ -26,6 +33,7 @@ export class Game {
         
         // Objects
         this.groundTiles = [];
+        this.snowTiles = [];  // Snow banks alongside the path
         this.yarns = [];
         this.triangles = [];
         this.bridges = [];
@@ -49,11 +57,17 @@ export class Game {
         this.groundTexture.wrapT = THREE.RepeatWrapping;
         this.groundTexture.repeat.set(2, 1);
         
-        // Water texture
-        this.waterTexture = this.textureLoader.load('kenney_pattern-pack/PNG/Default/pattern_30.png');
-        this.waterTexture.wrapS = THREE.RepeatWrapping;
-        this.waterTexture.wrapT = THREE.RepeatWrapping;
-        this.waterTexture.repeat.set(3, 8);
+        // Ice texture (crackle pattern for frozen look)
+        this.iceTexture = this.textureLoader.load('kenney_pattern-pack/PNG/Default/pattern_79.png');
+        this.iceTexture.wrapS = THREE.RepeatWrapping;
+        this.iceTexture.wrapT = THREE.RepeatWrapping;
+        this.iceTexture.repeat.set(4, 10);
+        
+        // Snow texture (hexagon dots - subtle snow texture)
+        this.snowTexture = this.textureLoader.load('kenney_pattern-pack/PNG/Default/pattern_38.png');
+        this.snowTexture.wrapS = THREE.RepeatWrapping;
+        this.snowTexture.wrapT = THREE.RepeatWrapping;
+        this.snowTexture.repeat.set(3, 1);
         
         // Create player
         this.cat = new Cat(this.scene);
@@ -68,8 +82,11 @@ export class Game {
             (triangle) => this.onTriangleHit(triangle)
         );
         
-        // Create level manager (pass water texture)
-        this.levelManager = new LevelManager(this.scene, this.waterTexture);
+        // Create level manager (pass ice texture and ground texture)
+        this.levelManager = new LevelManager(this.scene, this.iceTexture, this.groundTexture);
+        
+        // Create snow particle system
+        this.snow = new Snow(this.scene);
         
         // Initial ground tiles
         this.spawnInitialGround();
@@ -89,6 +106,11 @@ export class Game {
         this.messageEl = document.getElementById('message-display');
         this.endScreenEl = document.getElementById('end-screen');
         this.scoreBreakdownEl = document.getElementById('score-breakdown');
+        this.levelScreenEl = document.getElementById('level-screen');
+        this.levelNumberEl = document.getElementById('level-number');
+        this.failScreenEl = document.getElementById('fail-screen');
+        this.successScreenEl = document.getElementById('success-screen');
+        this.titleScreenEl = document.getElementById('title-screen');
         
         // Input handling
         this.setupInput();
@@ -159,6 +181,23 @@ export class Game {
         if (restartBtn) {
             restartBtn.addEventListener('click', () => this.restart());
         }
+        
+        // Retry button (on fail screen)
+        const retryBtn = document.getElementById('retry-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => this.retryLevel());
+        }
+        
+        // Next level button (on success screen)
+        const nextLevelBtn = document.getElementById('next-level-btn');
+        if (nextLevelBtn) {
+            nextLevelBtn.addEventListener('click', () => this.startNextLevel());
+        }
+    }
+    
+    getYarnRequired() {
+        // Base requirement + per-level increase
+        return CONFIG.LEVEL.BASE_YARN_REQUIRED + (this.currentLevel - 1) * CONFIG.LEVEL.YARN_PER_LEVEL;
     }
     
     handleKeyDown(e) {
@@ -232,21 +271,61 @@ export class Game {
         this.scene.add(tile);
         this.groundTiles.push(tile);
         
+        // Spawn snow banks on both sides of the road
+        this.spawnSnowBanks(z);
+        
         return tile;
+    }
+    
+    spawnSnowBanks(z) {
+        const snowWidth = 5;  // Width of snow banks on each side
+        const snowHeight = 0.15;  // Slightly lower than road to create raised road effect
+        
+        // Snow material - clean icy white with subtle shine (no texture - pure snow look)
+        const snowTopMaterial = new THREE.MeshPhongMaterial({
+            color: 0xE8F4FF,        // Very light icy blue-white
+            specular: 0xaaddff,     // Icy blue specular highlights
+            shininess: 25           // Subtle shine like packed snow
+        });
+        const snowSideMaterial = new THREE.MeshLambertMaterial({
+            color: 0xCCDDEE  // Light blue-white for snow sides
+        });
+        
+        const snowMaterials = [
+            snowSideMaterial, snowSideMaterial,
+            snowTopMaterial, snowSideMaterial,
+            snowSideMaterial, snowSideMaterial
+        ];
+        
+        // Left snow bank
+        const leftGeometry = new THREE.BoxGeometry(snowWidth, snowHeight, CONFIG.GROUND.DEPTH);
+        const leftSnow = new THREE.Mesh(leftGeometry, snowMaterials);
+        const leftX = -(CONFIG.GROUND.WIDTH / 2 + snowWidth / 2);
+        leftSnow.position.set(leftX, -snowHeight / 2 - 0.1, z);  // Slightly lower than road
+        this.scene.add(leftSnow);
+        this.snowTiles.push(leftSnow);
+        
+        // Right snow bank
+        const rightGeometry = new THREE.BoxGeometry(snowWidth, snowHeight, CONFIG.GROUND.DEPTH);
+        const rightSnow = new THREE.Mesh(rightGeometry, snowMaterials.map(m => m.clone()));
+        const rightX = CONFIG.GROUND.WIDTH / 2 + snowWidth / 2;
+        rightSnow.position.set(rightX, -snowHeight / 2 - 0.1, z);
+        this.scene.add(rightSnow);
+        this.snowTiles.push(rightSnow);
     }
     
     updateGround() {
         const catZ = this.cat.z;
         
-        // Spawn new tiles ahead, but STOP before water starts
+        // Spawn new tiles ahead, stopping RIGHT at the water edge (no gap)
         const spawnThreshold = catZ - CONFIG.SPAWN_AHEAD_DISTANCE;
-        const waterEdge = CONFIG.WATER.START_Z + 1;  // Stop tiles before water
+        const waterEdge = CONFIG.WATER.START_Z;  // Tiles go right up to water
         const lastTile = this.groundTiles[this.groundTiles.length - 1];
         
         if (lastTile && lastTile.position.z > spawnThreshold) {
             const newZ = lastTile.position.z - CONFIG.GROUND.DEPTH;
-            // Only spawn if the tile won't go into the water
-            if (newZ > waterEdge) {
+            // Only spawn if the tile edge won't overlap water
+            if (newZ + CONFIG.GROUND.DEPTH / 2 > waterEdge) {
                 this.spawnGroundTile(newZ);
             }
         }
@@ -262,6 +341,18 @@ export class Game {
                 tile.material.forEach(m => m.dispose());
             } else {
                 tile.material.dispose();
+            }
+            
+            // Also remove corresponding snow tiles (2 per ground tile - left and right)
+            for (let i = 0; i < 2 && this.snowTiles.length > 0; i++) {
+                const snowTile = this.snowTiles.shift();
+                this.scene.remove(snowTile);
+                snowTile.geometry.dispose();
+                if (Array.isArray(snowTile.material)) {
+                    snowTile.material.forEach(m => m.dispose());
+                } else {
+                    snowTile.material.dispose();
+                }
             }
         }
     }
@@ -369,11 +460,19 @@ export class Game {
         this.updateCameraPosition();
         this.updateUI();
         
+        // Update snow particles
+        this.snow.update(this.camera.position);
+        
         // Render
         this.renderer.render(this.scene, this.camera);
     }
     
     updateCollection() {
+        // Don't scroll while level screen is showing
+        if (this.levelScreenVisible) {
+            return;
+        }
+        
         // Check if stunned
         if (this.isStunned) {
             if (performance.now() >= this.stunEndTime) {
@@ -536,23 +635,123 @@ export class Game {
                       (yarn * CONFIG.YARN_POINTS) + 
                       (bridge * CONFIG.BRIDGE_POINTS);
         
-        // Determine title
-        let title = 'Game Over!';
-        if (bridge >= 15) {
-            title = 'Amazing! Perfect Crossing!';
-        } else if (bridge >= 10) {
-            title = 'Good Job!';
-        } else if (bridge >= 5) {
-            title = 'Not Bad!';
-        } else if (this.cat.getStackCount() === 0) {
-            title = 'Collect More Yarn!';
-        }
+        // Check if player reached the island (success)
+        const reachedIsland = bridge >= CONFIG.WATER.DEPTH;
         
-        this.showEndScreen(title, { distance, yarn, bridge, total });
+        if (reachedIsland) {
+            this.showSuccessScreen();
+        } else {
+            this.showFailScreen();
+        }
     }
     
-    restart() {
-        // Reset state
+    showLevelScreen() {
+        // Always set the pause flag
+        this.levelScreenVisible = true;
+        
+        if (this.levelScreenEl && this.levelNumberEl) {
+            this.levelNumberEl.textContent = this.currentLevel;
+            this.levelScreenEl.classList.remove('hidden');
+        }
+    }
+    
+    hideLevelScreen() {
+        if (this.levelScreenEl) {
+            this.levelScreenEl.classList.add('fade-out');
+            setTimeout(() => {
+                this.levelScreenEl.classList.add('hidden');
+                this.levelScreenEl.classList.remove('fade-out');
+                // Clear the pause flag after fade completes
+                this.levelScreenVisible = false;
+            }, 500);
+        } else {
+            // Clear the flag immediately if element doesn't exist
+            this.levelScreenVisible = false;
+        }
+    }
+    
+    showFailScreen() {
+        if (this.failScreenEl) {
+            const yarnNeeded = this.getYarnRequired();
+            const yarnHad = this.yarnCollected;
+            const levelEl = this.failScreenEl.querySelector('.fail-level');
+            const statsEl = this.failScreenEl.querySelector('.fail-stats');
+            
+            if (levelEl) levelEl.textContent = `Level ${this.currentLevel}`;
+            if (statsEl) {
+                statsEl.innerHTML = `
+                    <p>You collected ${yarnHad} yarn</p>
+                    <p>You needed ${Math.ceil(CONFIG.WATER.DEPTH)} to cross</p>
+                `;
+            }
+            
+            this.failScreenEl.classList.remove('hidden');
+        }
+    }
+    
+    hideFailScreen() {
+        if (this.failScreenEl) {
+            this.failScreenEl.classList.add('hidden');
+        }
+    }
+    
+    showSuccessScreen() {
+        if (this.successScreenEl) {
+            const levelEl = this.successScreenEl.querySelector('.success-level');
+            if (levelEl) levelEl.textContent = `Level ${this.currentLevel} Complete!`;
+            
+            this.successScreenEl.classList.remove('hidden');
+        }
+    }
+    
+    hideSuccessScreen() {
+        if (this.successScreenEl) {
+            this.successScreenEl.classList.add('hidden');
+        }
+    }
+    
+    retryLevel() {
+        // Restart the same level
+        this.hideFailScreen();
+        this.hideTitleScreen();
+        
+        // Show level screen FIRST (pauses scrolling)
+        this.showLevelScreen();
+        
+        // Then reset the level (but don't override levelScreenVisible)
+        this.resetLevelKeepingPause();
+        
+        // Auto-hide level screen after a delay (2 seconds pause before starting)
+        setTimeout(() => {
+            this.hideLevelScreen();
+        }, 2000);
+    }
+    
+    hideTitleScreen() {
+        if (this.titleScreenEl) {
+            this.titleScreenEl.classList.add('hidden');
+        }
+    }
+    
+    startNextLevel() {
+        // Advance to next level
+        this.hideSuccessScreen();
+        this.currentLevel++;
+        
+        // Show level screen FIRST (pauses scrolling)
+        this.showLevelScreen();
+        
+        // Then reset the level
+        this.resetLevelKeepingPause();
+        
+        // Auto-hide level screen after a delay (2 seconds pause before starting)
+        setTimeout(() => {
+            this.hideLevelScreen();
+        }, 2000);
+    }
+    
+    resetLevelKeepingPause() {
+        // Reset level but don't touch levelScreenVisible (used when level screen is already shown)
         this.phase = 'collection';
         this.distanceTraveled = 0;
         this.yarnCollected = 0;
@@ -560,6 +759,7 @@ export class Game {
         this.nextRowZ = -10;
         this.isStunned = false;
         this.stunEndTime = 0;
+        // Note: Do NOT reset levelScreenVisible here
         
         // Reset cat
         this.cat.reset();
@@ -575,6 +775,7 @@ export class Game {
         
         // Respawn ground
         this.groundTiles = [];
+        this.snowTiles = [];
         this.spawnInitialGround();
         
         // Re-generate level and water
@@ -589,19 +790,83 @@ export class Game {
         this.updateCameraPosition(true);
     }
     
+    resetLevel() {
+        // Reset state for a new run (same or next level)
+        this.phase = 'collection';
+        this.distanceTraveled = 0;
+        this.yarnCollected = 0;
+        this.bridgeDistance = 0;
+        this.nextRowZ = -10;
+        this.isStunned = false;
+        this.stunEndTime = 0;
+        this.levelScreenVisible = false;
+        
+        // Reset cat
+        this.cat.reset();
+        
+        // Reset spawner
+        this.spawner.reset();
+        
+        // Reset level manager
+        this.levelManager.reset();
+        
+        // Clear objects
+        this.clearObjects();
+        
+        // Respawn ground
+        this.groundTiles = [];
+        this.snowTiles = [];
+        this.spawnInitialGround();
+        
+        // Re-generate level and water
+        this.spawner.generateFullLevel();
+        this.levelManager.createWater();
+        
+        // Hide UI
+        this.hideMessage();
+        this.hideEndScreen();
+        
+        // Update camera instantly
+        this.updateCameraPosition(true);
+    }
+    
+    restart() {
+        // Full restart - reset level to 1
+        this.currentLevel = 1;
+        this.hideFailScreen();
+        this.hideSuccessScreen();
+        this.hideTitleScreen();
+        this.resetLevel();
+    }
+    
     clearObjects() {
         // Clear ground tiles
         for (const tile of this.groundTiles) {
             this.scene.remove(tile);
             tile.geometry.dispose();
-            // Handle array of materials
+            // Handle array of materials - but DON'T dispose shared textures
+            if (Array.isArray(tile.material)) {
+                tile.material.forEach(m => {
+                    // Don't dispose the map (shared texture) - just the material
+                    m.dispose();
+                });
+            } else {
+                tile.material.dispose();
+            }
+        }
+        this.groundTiles = [];
+        
+        // Clear snow tiles
+        for (const tile of this.snowTiles) {
+            this.scene.remove(tile);
+            tile.geometry.dispose();
             if (Array.isArray(tile.material)) {
                 tile.material.forEach(m => m.dispose());
             } else {
                 tile.material.dispose();
             }
         }
-        this.groundTiles = [];
+        this.snowTiles = [];
         
         // Clear yarns
         for (const yarn of this.yarns) {
@@ -639,6 +904,7 @@ export class Game {
         this.isRunning = false;
         this.clearObjects();
         this.cat.dispose();
+        this.snow.dispose();
         this.renderer.dispose();
     }
 }
