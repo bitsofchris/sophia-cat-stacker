@@ -31,6 +31,11 @@ export class Game {
         this.yarnCollected = 0;
         this.bridgeDistance = 0;
         
+        // Touch state for swipe detection
+        this.touchStartX = null;
+        this.touchStartY = null;
+        this.touchStartTime = null;
+        
         // Objects
         this.groundTiles = [];
         this.snowTiles = [];  // Snow banks alongside the path
@@ -57,17 +62,6 @@ export class Game {
         this.groundTexture.wrapT = THREE.RepeatWrapping;
         this.groundTexture.repeat.set(2, 1);
         
-        // Ice texture (crackle pattern for frozen look)
-        this.iceTexture = this.textureLoader.load('kenney_pattern-pack/PNG/Default/pattern_79.png');
-        this.iceTexture.wrapS = THREE.RepeatWrapping;
-        this.iceTexture.wrapT = THREE.RepeatWrapping;
-        this.iceTexture.repeat.set(4, 10);
-        
-        // Snow texture (hexagon dots - subtle snow texture)
-        this.snowTexture = this.textureLoader.load('kenney_pattern-pack/PNG/Default/pattern_38.png');
-        this.snowTexture.wrapS = THREE.RepeatWrapping;
-        this.snowTexture.wrapT = THREE.RepeatWrapping;
-        this.snowTexture.repeat.set(3, 1);
         
         // Create player
         this.cat = new Cat(this.scene);
@@ -82,8 +76,8 @@ export class Game {
             (triangle) => this.onTriangleHit(triangle)
         );
         
-        // Create level manager (pass ice texture and ground texture)
-        this.levelManager = new LevelManager(this.scene, this.iceTexture, this.groundTexture);
+        // Create level manager
+        this.levelManager = new LevelManager(this.scene);
         
         // Create snow particle system
         this.snow = new Snow(this.scene);
@@ -176,6 +170,12 @@ export class Game {
         // Touch/click controls
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
         
+        // Touch swipe controls
+        this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+        this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
+        this.canvas.addEventListener('touchcancel', (e) => this.handleTouchCancel(e), { passive: false });
+        
         // Restart button
         const restartBtn = document.getElementById('restart-btn');
         if (restartBtn) {
@@ -235,6 +235,90 @@ export class Game {
         }
     }
     
+    handleTouchStart(e) {
+        if (this.phase !== 'collection') return;
+        
+        // Prevent default touch behaviors (scrolling, zooming)
+        e.preventDefault();
+        
+        // Use first touch only (ignore multi-touch)
+        const touch = e.touches[0];
+        if (!touch) return;
+        
+        this.touchStartX = touch.clientX;
+        this.touchStartY = touch.clientY;
+        this.touchStartTime = performance.now();
+    }
+    
+    handleTouchMove(e) {
+        // Prevent default to avoid scrolling during swipe
+        e.preventDefault();
+    }
+    
+    handleTouchEnd(e) {
+        if (this.phase !== 'collection') {
+            this.resetTouchState();
+            return;
+        }
+        
+        // Prevent default touch behaviors
+        e.preventDefault();
+        
+        // Check if we have valid touch start data
+        if (this.touchStartX === null || this.touchStartY === null || this.touchStartTime === null) {
+            this.resetTouchState();
+            return;
+        }
+        
+        // Get end position from changedTouches (touches array may be empty on touchend)
+        const touch = e.changedTouches[0];
+        if (!touch) {
+            this.resetTouchState();
+            return;
+        }
+        
+        const endX = touch.clientX;
+        const endY = touch.clientY;
+        const endTime = performance.now();
+        
+        // Calculate swipe delta
+        const deltaX = endX - this.touchStartX;
+        const deltaY = endY - this.touchStartY;
+        const duration = endTime - this.touchStartTime;
+        
+        // Reset touch state
+        this.resetTouchState();
+        
+        // Validate swipe
+        const minDistance = 50; // pixels
+        const minVelocity = 0.3; // pixels per millisecond
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+        
+        // Check if swipe is valid:
+        // 1. Minimum horizontal distance
+        // 2. Primarily horizontal (horizontal distance > vertical distance)
+        // 3. Minimum velocity
+        if (absDeltaX >= minDistance && 
+            absDeltaX > absDeltaY && 
+            absDeltaX / duration >= minVelocity) {
+            // Determine direction: positive deltaX = swipe right, negative = swipe left
+            const direction = deltaX > 0 ? 1 : -1;
+            this.cat.switchLane(direction);
+        }
+    }
+    
+    handleTouchCancel(e) {
+        // Reset touch state if touch is cancelled
+        this.resetTouchState();
+    }
+    
+    resetTouchState() {
+        this.touchStartX = null;
+        this.touchStartY = null;
+        this.touchStartTime = null;
+    }
+    
     spawnInitialGround() {
         // Create ground tiles from behind the cat to ahead
         for (let z = 10; z > -CONFIG.SPAWN_AHEAD_DISTANCE; z -= CONFIG.GROUND.DEPTH) {
@@ -278,7 +362,7 @@ export class Game {
     }
     
     spawnSnowBanks(z) {
-        const snowWidth = 5;  // Width of snow banks on each side
+        const snowWidth = 20;  // Extra wide to fill entire screen
         const snowHeight = 0.15;  // Slightly lower than road to create raised road effect
         
         // Snow material - clean icy white with subtle shine (no texture - pure snow look)
@@ -594,7 +678,7 @@ export class Game {
     
     startTransition() {
         this.phase = 'transition';
-        this.showMessage('Approaching Water!');
+        this.showMessage('Approaching Ice!');
         
         // Water already created at start - no need to create or clear
         // Objects behind the cat are already despawned naturally

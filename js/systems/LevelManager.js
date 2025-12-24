@@ -3,13 +3,12 @@ import { CONFIG } from '../config.js';
 import { Bridge } from '../entities/Bridge.js';
 
 export class LevelManager {
-    constructor(scene, iceTexture = null, groundTexture = null) {
+    constructor(scene) {
         this.scene = scene;
-        this.iceTexture = iceTexture;
-        this.groundTexture = groundTexture;
         this.bridges = [];
         this.waterPlane = null;
         this.waterSurface = null;
+        this.iceStreaks = [];  // White streaks on ice
         this.shorePlane = null;
         
         // Bridge building state
@@ -19,19 +18,17 @@ export class LevelManager {
     }
     
     createWater() {
-        // Wide ICE plane - extends full visible area
-        const iceGeometry = new THREE.PlaneGeometry(
-            24,  // Extra wide to fill the view beyond snow banks
-            CONFIG.WATER.DEPTH
-        );
+        // Extra wide ICE plane - fills entire screen
+        const iceWidth = 60;
+        const iceGeometry = new THREE.PlaneGeometry(iceWidth, CONFIG.WATER.DEPTH);
         
-        // Shiny icy blue material with specular highlights
+        // Solid light blue icy material with shine
         const iceMaterial = new THREE.MeshPhongMaterial({
-            map: this.iceTexture,
-            color: 0x88ddff,       // Light icy blue
+            color: 0x88ccee,       // Light icy blue
             specular: 0xffffff,    // White specular highlights
-            shininess: 80,         // High shininess for icy look
-            reflectivity: 0.8
+            shininess: 100,        // High shininess for glossy ice
+            transparent: true,
+            opacity: 0.95
         });
         
         this.waterSurface = new THREE.Mesh(iceGeometry, iceMaterial);
@@ -39,22 +36,26 @@ export class LevelManager {
         this.waterSurface.position.set(0, 0.02, CONFIG.WATER.START_Z - CONFIG.WATER.DEPTH / 2);
         this.scene.add(this.waterSurface);
         
+        // Add white streaks across the ice for frozen look
+        this.createIceStreaks(iceWidth);
+        
         // No extra geometry - keeping it clean
         this.waterPlane = null;
         
-        // Island (goal) - uses same texture as road
+        // Island (goal) - snowy white ground
         const islandGroup = new THREE.Group();
         
-        // Main island platform with road texture on top
+        // Main island platform - snowy white
         const islandGeometry = new THREE.BoxGeometry(8, 1, 12);
         
-        // Create materials array for island: textured top, solid sides
-        const islandTopMaterial = new THREE.MeshLambertMaterial({
-            map: this.groundTexture,
-            color: 0xCCCCCC  // Same tint as road
+        // Create materials array for island: snowy white top, icy sides
+        const islandTopMaterial = new THREE.MeshPhongMaterial({
+            color: 0xE8F4FF,        // Icy white like snow banks
+            specular: 0xaaddff,
+            shininess: 25
         });
         const islandSideMaterial = new THREE.MeshLambertMaterial({
-            color: 0x555555  // Dark sides like the road
+            color: 0xCCDDEE  // Light blue-white sides
         });
         
         // Materials: [right, left, top, bottom, front, back]
@@ -120,6 +121,106 @@ export class LevelManager {
         christmasTreeGroup.position.set(0, 0.5, -3);
         islandGroup.add(christmasTreeGroup);
         
+        // Snowman
+        const snowmanGroup = new THREE.Group();
+        
+        // Bottom ball (largest)
+        const bottomBallGeometry = new THREE.SphereGeometry(0.6, 16, 16);
+        const snowMaterial = new THREE.MeshPhongMaterial({
+            color: 0xFFFFFF,
+            specular: 0xaaddff,
+            shininess: 20
+        });
+        const bottomBall = new THREE.Mesh(bottomBallGeometry, snowMaterial);
+        bottomBall.position.set(0, 0.6, 0);
+        snowmanGroup.add(bottomBall);
+        
+        // Middle ball
+        const middleBallGeometry = new THREE.SphereGeometry(0.45, 16, 16);
+        const middleBall = new THREE.Mesh(middleBallGeometry, snowMaterial);
+        middleBall.position.set(0, 1.4, 0);
+        snowmanGroup.add(middleBall);
+        
+        // Head (smallest)
+        const headGeometry = new THREE.SphereGeometry(0.35, 16, 16);
+        const head = new THREE.Mesh(headGeometry, snowMaterial);
+        head.position.set(0, 2.1, 0);
+        snowmanGroup.add(head);
+        
+        // Carrot nose
+        const noseGeometry = new THREE.ConeGeometry(0.08, 0.3, 8);
+        const noseMaterial = new THREE.MeshLambertMaterial({ color: 0xFF6600 }); // Orange
+        const nose = new THREE.Mesh(noseGeometry, noseMaterial);
+        nose.position.set(0, 2.1, 0.35);
+        nose.rotation.x = Math.PI / 2;
+        snowmanGroup.add(nose);
+        
+        // Coal eyes
+        const eyeGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+        const coalMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const leftEye = new THREE.Mesh(eyeGeometry, coalMaterial);
+        leftEye.position.set(-0.12, 2.2, 0.3);
+        snowmanGroup.add(leftEye);
+        
+        const rightEye = new THREE.Mesh(eyeGeometry, coalMaterial);
+        rightEye.position.set(0.12, 2.2, 0.3);
+        snowmanGroup.add(rightEye);
+        
+        // Coal smile (arc of small spheres)
+        for (let i = 0; i < 5; i++) {
+            const smileAngle = (i - 2) * 0.2;
+            const smilePiece = new THREE.Mesh(eyeGeometry, coalMaterial);
+            smilePiece.position.set(
+                Math.sin(smileAngle) * 0.15,
+                2.0 - Math.abs(i - 2) * 0.03,
+                0.32
+            );
+            snowmanGroup.add(smilePiece);
+        }
+        
+        // Top hat
+        const hatBrimGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.05, 16);
+        const hatMaterial = new THREE.MeshLambertMaterial({ color: 0x111111 });
+        const hatBrim = new THREE.Mesh(hatBrimGeometry, hatMaterial);
+        hatBrim.position.set(0, 2.42, 0);
+        snowmanGroup.add(hatBrim);
+        
+        const hatTopGeometry = new THREE.CylinderGeometry(0.2, 0.2, 0.35, 16);
+        const hatTop = new THREE.Mesh(hatTopGeometry, hatMaterial);
+        hatTop.position.set(0, 2.62, 0);
+        snowmanGroup.add(hatTop);
+        
+        // Red hat band
+        const hatBandGeometry = new THREE.CylinderGeometry(0.21, 0.21, 0.06, 16);
+        const hatBandMaterial = new THREE.MeshLambertMaterial({ color: 0xCC0000 });
+        const hatBand = new THREE.Mesh(hatBandGeometry, hatBandMaterial);
+        hatBand.position.set(0, 2.48, 0);
+        snowmanGroup.add(hatBand);
+        
+        // Stick arms
+        const armGeometry = new THREE.CylinderGeometry(0.03, 0.03, 0.8, 8);
+        const armMaterial = new THREE.MeshLambertMaterial({ color: 0x4A3728 }); // Brown
+        
+        const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+        leftArm.position.set(-0.7, 1.4, 0);
+        leftArm.rotation.z = Math.PI / 3;
+        snowmanGroup.add(leftArm);
+        
+        const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+        rightArm.position.set(0.7, 1.4, 0);
+        rightArm.rotation.z = -Math.PI / 3;
+        snowmanGroup.add(rightArm);
+        
+        // Coal buttons on middle ball
+        for (let i = 0; i < 3; i++) {
+            const button = new THREE.Mesh(eyeGeometry, coalMaterial);
+            button.position.set(0, 1.2 + i * 0.15, 0.43);
+            snowmanGroup.add(button);
+        }
+        
+        snowmanGroup.position.set(2.5, 0.5, 0);
+        islandGroup.add(snowmanGroup);
+        
         // Presents - boxes with ribbons
         const presentConfigs = [
             { size: [0.8, 0.6, 0.8], pos: [-2, 0.8, -1], boxColor: 0xDC143C, ribbonColor: 0xFFFFFF }, // Red with white
@@ -171,6 +272,39 @@ export class LevelManager {
         islandGroup.position.set(0, -0.5, CONFIG.WATER.START_Z - CONFIG.WATER.DEPTH - 6);
         this.scene.add(islandGroup);
         this.shorePlane = islandGroup;
+    }
+    
+    createIceStreaks(iceWidth) {
+        // Create random white streaks across the ice surface
+        const streakMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.4
+        });
+        
+        const numStreaks = 12;
+        const iceStartZ = CONFIG.WATER.START_Z;
+        const iceEndZ = CONFIG.WATER.START_Z - CONFIG.WATER.DEPTH;
+        
+        for (let i = 0; i < numStreaks; i++) {
+            // Random streak dimensions
+            const streakWidth = 0.1 + Math.random() * 0.3;
+            const streakLength = 3 + Math.random() * 8;
+            
+            const streakGeometry = new THREE.PlaneGeometry(streakWidth, streakLength);
+            const streak = new THREE.Mesh(streakGeometry, streakMaterial.clone());
+            
+            // Random position across ice
+            const x = (Math.random() - 0.5) * (iceWidth - 2);
+            const z = iceStartZ - Math.random() * CONFIG.WATER.DEPTH;
+            
+            streak.rotation.x = -Math.PI / 2;
+            streak.rotation.z = (Math.random() - 0.5) * 0.3;  // Slight random angle
+            streak.position.set(x, 0.03, z);  // Just above ice surface
+            
+            this.scene.add(streak);
+            this.iceStreaks.push(streak);
+        }
     }
     
     buildBridge(cat, onBridgeComplete) {
@@ -245,24 +379,49 @@ export class LevelManager {
             this.waterSurface = null;
         }
         
+        // Remove ice streaks
+        for (const streak of this.iceStreaks) {
+            this.scene.remove(streak);
+            streak.geometry.dispose();
+            streak.material.dispose();
+        }
+        this.iceStreaks = [];
+        
         // Remove shore/island
         if (this.shorePlane) {
             this.scene.remove(this.shorePlane);
-            // If it's a group, dispose all children
-            if (this.shorePlane.children) {
-                this.shorePlane.children.forEach(child => {
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) child.material.dispose();
-                });
-            } else {
-                if (this.shorePlane.geometry) this.shorePlane.geometry.dispose();
-                if (this.shorePlane.material) this.shorePlane.material.dispose();
-            }
+            // Recursively dispose all children in the group
+            this.disposeObject(this.shorePlane);
             this.shorePlane = null;
         }
         
         this.nextBridgeZ = CONFIG.WATER.START_Z;
         this.bridgeTimer = 0;
+    }
+    
+    disposeObject(object) {
+        // Recursively dispose an object and all its children
+        if (object.children && object.children.length > 0) {
+            // Make a copy of children array since we're modifying it
+            const children = [...object.children];
+            for (const child of children) {
+                this.disposeObject(child);
+            }
+        }
+        
+        // Dispose geometry
+        if (object.geometry) {
+            object.geometry.dispose();
+        }
+        
+        // Dispose material(s)
+        if (object.material) {
+            if (Array.isArray(object.material)) {
+                object.material.forEach(m => m.dispose());
+            } else {
+                object.material.dispose();
+            }
+        }
     }
     
     dispose() {
