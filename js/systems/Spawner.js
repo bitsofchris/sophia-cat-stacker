@@ -126,8 +126,8 @@ export class Spawner {
         if (this.generated) return;
         
         // Calculate targets based on level requirements
-        const targetYarnCount = 3 * this.yarnRequired;  // Always 3x requirement
-        const maxObstacleCount = this.yarnRequired;     // Never more than 1x requirement
+        const targetYarnCount = 1.5 * this.yarnRequired;  // Reduced from 3x to 1.5x (less yarn)
+        const maxObstacleCount = 2 * this.yarnRequired;    // Increased from 1x to 2x (more obstacles)
         
         // Track counts during generation
         let yarnCount = 0;

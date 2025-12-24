@@ -15,7 +15,7 @@ export const CONFIG = {
     LEVEL_END_DISTANCE: 150,
     SPAWN_AHEAD_DISTANCE: 50,
     DESPAWN_BEHIND_DISTANCE: 10,
-    ROW_SPACING: 3,              // distance between spawn rows
+    ROW_SPACING: 5,              // distance between spawn rows (increased for more spacing)
     
     // Collision
     COLLISION_THRESHOLD: 1.5,    // Z-distance for collision detection
@@ -83,9 +83,9 @@ export const CONFIG = {
     // Y = Yarn, T = Triangle, X = Empty
     // RULE: Always at least one safe lane (X or Y) - never all T's
     PATTERNS: {
-        easy: ['YYY', 'YYX', 'YYY', 'XYY', 'YXY', 'YYY', 'YYX', 'YYY'],   // All yarn, no cones
-        medium: ['YYX', 'XYY', 'YXY', 'YYY', 'XYX', 'YYX', 'YXY', 'TXY'], // Only 1 cone pattern
-        hard: ['YTX', 'XYY', 'YXY', 'TXX', 'YYX', 'XYT', 'YYX', 'YXY']    // Only 2 cone patterns
+        easy: ['YXX', 'XYX', 'XXY', 'YXY', 'XYX', 'YXX', 'XXY', 'YXY'],   // Less yarn, more empty spaces
+        medium: ['YTX', 'XTY', 'TXY', 'YXT', 'XYT', 'TYX', 'YTX', 'TXY'], // More obstacles, less yarn
+        hard: ['TTX', 'XTT', 'TXT', 'TTY', 'YTT', 'TXT', 'TTX', 'XTT']    // Even more obstacles
     },
     
     // Difficulty thresholds (by distance traveled)
