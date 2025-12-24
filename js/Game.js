@@ -90,10 +90,11 @@ export class Game {
         this.spawnInitialGround();
         
         // Pre-generate the entire level (yarn, triangles)
-        this.spawner.generateFullLevel();
+        const levelEndDistance = this.getLevelEndDistance();
+        this.spawner.generateFullLevel(levelEndDistance);
         
         // Create water and island at start (visible in distance)
-        this.levelManager.createWater();
+        this.levelManager.createWater(levelEndDistance);
         
         // Position camera to follow cat
         this.updateCameraPosition(true);
@@ -202,6 +203,13 @@ export class Game {
     getYarnRequired() {
         // Base requirement + per-level increase
         return CONFIG.LEVEL.BASE_YARN_REQUIRED + (this.currentLevel - 1) * CONFIG.LEVEL.YARN_PER_LEVEL;
+    }
+    
+    getLevelEndDistance() {
+        // Scale level length based on yarn requirement
+        const yarnRequired = this.getYarnRequired();
+        const extraYarn = yarnRequired - CONFIG.LEVEL.BASE_YARN_REQUIRED;
+        return CONFIG.BASE_LEVEL_DISTANCE + extraYarn * CONFIG.DISTANCE_PER_YARN;
     }
     
     handleKeyDown(e) {
@@ -407,7 +415,7 @@ export class Game {
         
         // Spawn new tiles ahead, stopping RIGHT at the water edge (no gap)
         const spawnThreshold = catZ - CONFIG.SPAWN_AHEAD_DISTANCE;
-        const waterEdge = CONFIG.WATER.START_Z;  // Tiles go right up to water
+        const waterEdge = this.levelManager.waterStartZ || -this.getLevelEndDistance();  // Tiles go right up to water
         const lastTile = this.groundTiles[this.groundTiles.length - 1];
         
         if (lastTile && lastTile.position.z > spawnThreshold) {
@@ -600,7 +608,7 @@ export class Game {
         );
         
         // Check for level end
-        if (this.distanceTraveled >= CONFIG.LEVEL_END_DISTANCE) {
+        if (this.distanceTraveled >= this.getLevelEndDistance()) {
             this.startTransition();
         }
     }
@@ -660,7 +668,8 @@ export class Game {
         this.updateGround();
         
         // Check if reached water
-        if (this.cat.z <= CONFIG.WATER.START_Z) {
+        const waterStartZ = this.levelManager.waterStartZ || -this.getLevelEndDistance();
+        if (this.cat.z <= waterStartZ) {
             this.startWater();
         }
     }
@@ -873,8 +882,9 @@ export class Game {
         this.spawnInitialGround();
         
         // Re-generate level and water
-        this.spawner.generateFullLevel();
-        this.levelManager.createWater();
+        const levelEndDistance = this.getLevelEndDistance();
+        this.spawner.generateFullLevel(levelEndDistance);
+        this.levelManager.createWater(levelEndDistance);
         
         // Hide UI
         this.hideMessage();
@@ -914,8 +924,9 @@ export class Game {
         this.spawnInitialGround();
         
         // Re-generate level and water
-        this.spawner.generateFullLevel();
-        this.levelManager.createWater();
+        const levelEndDistance = this.getLevelEndDistance();
+        this.spawner.generateFullLevel(levelEndDistance);
+        this.levelManager.createWater(levelEndDistance);
         
         // Hide UI
         this.hideMessage();

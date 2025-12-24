@@ -13,12 +13,16 @@ export class LevelManager {
         this.shorePlane = null;
         
         // Bridge building state
+        this.waterStartZ = CONFIG.WATER.START_Z;  // Default, will be updated per level
         this.nextBridgeZ = CONFIG.WATER.START_Z;
         this.bridgeTimer = 0;
         this.bridgeBuildInterval = 200; // ms between bridge pieces
     }
     
-    createWater() {
+    createWater(levelEndDistance) {
+        // Calculate water start position based on level end distance
+        this.waterStartZ = -levelEndDistance;
+        this.nextBridgeZ = this.waterStartZ;
         // Extra wide ICE plane - fills entire screen
         const iceWidth = 60;
         const iceGeometry = new THREE.PlaneGeometry(iceWidth, CONFIG.WATER.DEPTH);
@@ -34,7 +38,7 @@ export class LevelManager {
         
         this.waterSurface = new THREE.Mesh(iceGeometry, iceMaterial);
         this.waterSurface.rotation.x = -Math.PI / 2;
-        this.waterSurface.position.set(0, 0.02, CONFIG.WATER.START_Z - CONFIG.WATER.DEPTH / 2);
+        this.waterSurface.position.set(0, 0.02, this.waterStartZ - CONFIG.WATER.DEPTH / 2);
         this.scene.add(this.waterSurface);
         
         // Add white streaks across the ice for frozen look
@@ -270,7 +274,7 @@ export class LevelManager {
         }
         
         // Position the whole island
-        islandGroup.position.set(0, -0.5, CONFIG.WATER.START_Z - CONFIG.WATER.DEPTH - 6);
+        islandGroup.position.set(0, -0.5, this.waterStartZ - CONFIG.WATER.DEPTH - 6);
         this.scene.add(islandGroup);
         this.shorePlane = islandGroup;
     }
@@ -284,8 +288,8 @@ export class LevelManager {
         });
         
         const numStreaks = 12;
-        const iceStartZ = CONFIG.WATER.START_Z;
-        const iceEndZ = CONFIG.WATER.START_Z - CONFIG.WATER.DEPTH;
+        const iceStartZ = this.waterStartZ;
+        const iceEndZ = this.waterStartZ - CONFIG.WATER.DEPTH;
         
         for (let i = 0; i < numStreaks; i++) {
             // Random streak dimensions
@@ -339,7 +343,7 @@ export class LevelManager {
         this.bridgeTimer = now;
         
         // Check if reached the shore
-        const shoreZ = CONFIG.WATER.START_Z - CONFIG.WATER.DEPTH;
+        const shoreZ = this.waterStartZ - CONFIG.WATER.DEPTH;
         if (this.nextBridgeZ <= shoreZ) {
             onBridgeComplete();
             return true;
@@ -358,7 +362,7 @@ export class LevelManager {
     
     getLastBridgeZ() {
         if (this.bridges.length === 0) {
-            return CONFIG.WATER.START_Z;
+            return this.waterStartZ;
         }
         return this.bridges[this.bridges.length - 1].getZ();
     }
@@ -402,7 +406,7 @@ export class LevelManager {
             this.shorePlane = null;
         }
         
-        this.nextBridgeZ = CONFIG.WATER.START_Z;
+        this.nextBridgeZ = this.waterStartZ || CONFIG.WATER.START_Z;
         this.bridgeTimer = 0;
     }
     

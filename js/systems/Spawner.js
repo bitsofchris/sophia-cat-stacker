@@ -122,7 +122,7 @@ export class Spawner {
     }
     
     // Pre-generate the entire level at once
-    generateFullLevel() {
+    generateFullLevel(levelEndDistance) {
         if (this.generated) return;
         
         // Calculate targets based on level requirements
@@ -139,7 +139,7 @@ export class Spawner {
         // Generate rows from start to just before water
         // Leave some empty space before water for visual clarity
         const startZ = -10;
-        const endZ = -(CONFIG.LEVEL_END_DISTANCE - 5);  // Stop 5 units before water
+        const endZ = -(levelEndDistance - 5);  // Stop 5 units before water
         
         // Calculate total rows to estimate progress
         const totalRows = Math.floor((startZ - endZ) / CONFIG.ROW_SPACING);

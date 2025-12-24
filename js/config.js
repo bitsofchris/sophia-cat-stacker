@@ -12,7 +12,9 @@ export const CONFIG = {
     LANE_SWITCH_DURATION: 150,   // milliseconds
     
     // Distances
-    LEVEL_END_DISTANCE: 150,
+    LEVEL_END_DISTANCE: 150,    // Base distance for level 1 (will be scaled)
+    BASE_LEVEL_DISTANCE: 150,   // Base distance for level 1
+    DISTANCE_PER_YARN: 1.5,     // Additional distance per yarn required beyond base
     SPAWN_AHEAD_DISTANCE: 50,
     DESPAWN_BEHIND_DISTANCE: 10,
     ROW_SPACING: 5,              // distance between spawn rows (increased for more spacing)
