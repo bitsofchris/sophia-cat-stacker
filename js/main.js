@@ -38,7 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     };
     
+    // Support both click and touch for iOS compatibility
     startBtn.addEventListener('click', startGame);
+    startBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        startGame();
+    });
     
     // Expose for debugging (optional)
     window.game = game;

@@ -186,22 +186,37 @@ export class Game {
         this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: false });
         this.canvas.addEventListener('touchcancel', (e) => this.handleTouchCancel(e), { passive: false });
         
-        // Restart button
+        // Restart button - support both click and touch for iOS
         const restartBtn = document.getElementById('restart-btn');
         if (restartBtn) {
-            restartBtn.addEventListener('click', () => this.restart());
+            const handleRestart = () => this.restart();
+            restartBtn.addEventListener('click', handleRestart);
+            restartBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleRestart();
+            });
         }
         
-        // Retry button (on fail screen)
+        // Retry button (on fail screen) - support both click and touch for iOS
         const retryBtn = document.getElementById('retry-btn');
         if (retryBtn) {
-            retryBtn.addEventListener('click', () => this.retryLevel());
+            const handleRetry = () => this.retryLevel();
+            retryBtn.addEventListener('click', handleRetry);
+            retryBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleRetry();
+            });
         }
         
-        // Next level button (on success screen)
+        // Next level button (on success screen) - support both click and touch for iOS
         const nextLevelBtn = document.getElementById('next-level-btn');
         if (nextLevelBtn) {
-            nextLevelBtn.addEventListener('click', () => this.startNextLevel());
+            const handleNextLevel = () => this.startNextLevel();
+            nextLevelBtn.addEventListener('click', handleNextLevel);
+            nextLevelBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleNextLevel();
+            });
         }
     }
     

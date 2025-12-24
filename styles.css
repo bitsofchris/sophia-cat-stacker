@@ -129,6 +129,8 @@ body {
     border-radius: 30px;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
+    touch-action: manipulation; /* Prevent double-tap zoom on iOS */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
 }
 
 #restart-btn:hover {
@@ -284,6 +286,8 @@ body {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     letter-spacing: 1px;
     animation: btnPulse 2s ease-in-out infinite;
+    touch-action: manipulation; /* Prevent double-tap zoom on iOS */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
 }
 
 @keyframes btnPulse {
@@ -437,6 +441,8 @@ body {
         0 0 40px rgba(220, 20, 60, 0.3);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     letter-spacing: 1px;
+    touch-action: manipulation; /* Prevent double-tap zoom on iOS */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
 }
 
 #retry-btn:hover {
@@ -502,6 +508,8 @@ body {
         0 0 40px rgba(34, 139, 34, 0.3);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     letter-spacing: 1px;
+    touch-action: manipulation; /* Prevent double-tap zoom on iOS */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
 }
 
 #next-level-btn:hover {

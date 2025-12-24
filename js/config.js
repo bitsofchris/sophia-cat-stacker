@@ -84,10 +84,11 @@ export const CONFIG = {
     // Difficulty Patterns
     // Y = Yarn, T = Triangle, X = Empty
     // RULE: Always at least one safe lane (X or Y) - never all T's
+    // Design: Stagger yarn so players can weave and collect multiple - avoid YXY patterns
     PATTERNS: {
-        easy: ['YXX', 'XYX', 'XXY', 'YXY', 'XYX', 'YXX', 'XXY', 'YXY'],   // Less yarn, more empty spaces
-        medium: ['YTX', 'XTY', 'TXY', 'YXT', 'XYT', 'TYX', 'YTX', 'TXY'], // More obstacles, less yarn
-        hard: ['TTX', 'XTT', 'TXT', 'TTY', 'YTT', 'TXT', 'TTX', 'XTT']    // Even more obstacles
+        easy: ['YXX', 'XYX', 'XXY', 'YXX', 'XYX', 'XXY', 'YXX', 'XYX'],   // Staggered yarn - allows weaving
+        medium: ['YTX', 'XTY', 'TXY', 'YXT', 'XYT', 'TYX', 'YTX', 'TXY'], // Staggered with obstacles
+        hard: ['TTX', 'XTT', 'TXT', 'TTY', 'YTT', 'TXT', 'TTX', 'XTT']    // Even more obstacles, still staggered
     },
     
     // Difficulty thresholds (by distance traveled)
