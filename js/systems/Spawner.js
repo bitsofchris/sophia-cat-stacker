@@ -11,11 +11,20 @@ export class Spawner {
         this.generated = false;
         this.currentLevel = currentLevel;
         this.yarnRequired = yarnRequired;
+        
+        // Density settings (from game settings panel)
+        this.yarnDensity = 1.5;      // Default: 1.5x yarn required
+        this.obstacleDensity = 2;    // Default: 2x yarn required for max obstacles
     }
     
     setLevelInfo(currentLevel, yarnRequired) {
         this.currentLevel = currentLevel;
         this.yarnRequired = yarnRequired;
+    }
+    
+    setDensitySettings(yarnDensity, obstacleDensity) {
+        this.yarnDensity = yarnDensity;
+        this.obstacleDensity = obstacleDensity;
     }
     
     getDifficulty(distance, easyEnd, mediumEnd) {
@@ -125,9 +134,9 @@ export class Spawner {
     generateFullLevel(levelEndDistance, easyEndDistance, mediumEndDistance) {
         if (this.generated) return;
         
-        // Calculate targets based on level requirements
-        const targetYarnCount = 1.5 * this.yarnRequired;  // Reduced from 3x to 1.5x (less yarn)
-        const maxObstacleCount = 2 * this.yarnRequired;    // Increased from 1x to 2x (more obstacles)
+        // Calculate targets based on level requirements and density settings
+        const targetYarnCount = this.yarnDensity * this.yarnRequired;  // Use density setting
+        const maxObstacleCount = this.obstacleDensity * this.yarnRequired;  // Use density setting
         
         // Track counts during generation
         let yarnCount = 0;

@@ -43,7 +43,59 @@
                 <p class="goal-text">Collect yarn, avoid obstacles, build a bridge!</p>
             </div>
             
-            <button id="start-btn">Start Game</button>
+            <div class="title-buttons">
+                <button id="start-btn">Start Game</button>
+                <button id="settings-btn">Settings</button>
+            </div>
+        </div>
+        
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="hidden">
+            <div class="settings-content">
+                <h2 class="settings-title">Game Settings</h2>
+                
+                <div class="setting-row">
+                    <label for="yarn-density">Yarn Density</label>
+                    <div class="slider-container">
+                        <span class="slider-min">1x</span>
+                        <input type="range" id="yarn-density" min="1" max="20" value="1.5" step="0.5">
+                        <span class="slider-max">20x</span>
+                    </div>
+                    <span class="slider-value" id="yarn-density-value">1.5x</span>
+                </div>
+                
+                <div class="setting-row">
+                    <label for="obstacle-density">Obstacle Density</label>
+                    <div class="slider-container">
+                        <span class="slider-min">0x</span>
+                        <input type="range" id="obstacle-density" min="0" max="3" value="2" step="0.25">
+                        <span class="slider-max">3x</span>
+                    </div>
+                    <span class="slider-value" id="obstacle-density-value">2x</span>
+                </div>
+                
+                <div class="setting-row">
+                    <label for="cat-speed">Cat Speed</label>
+                    <div class="slider-container">
+                        <span class="slider-min">0.5x</span>
+                        <input type="range" id="cat-speed" min="0.5" max="3" value="1" step="0.25">
+                        <span class="slider-max">3x</span>
+                    </div>
+                    <span class="slider-value" id="cat-speed-value">1x</span>
+                </div>
+                
+                <div class="setting-row">
+                    <label for="starting-level">Starting Level</label>
+                    <div class="slider-container">
+                        <span class="slider-min">1</span>
+                        <input type="range" id="starting-level" min="1" max="20" value="1" step="1">
+                        <span class="slider-max">20</span>
+                    </div>
+                    <span class="slider-value" id="starting-level-value">1</span>
+                </div>
+                
+                <button id="settings-close-btn">Done</button>
+            </div>
         </div>
         
         <!-- UI Overlay -->
@@ -61,6 +113,7 @@
                 <span class="level-label">Level</span>
                 <span id="level-number" class="level-number">1</span>
             </div>
+            <button id="quit-btn">Quit to Main Menu</button>
         </div>
         
         <!-- Fail Screen -->

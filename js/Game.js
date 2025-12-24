@@ -8,8 +8,19 @@ import { Snow } from './systems/Snow.js';
 import { SoundManager } from './systems/SoundManager.js';
 
 export class Game {
-    constructor(canvas) {
+    constructor(canvas, settings = null) {
         this.canvas = canvas;
+        
+        // Game settings (from settings panel)
+        this.settings = {
+            yarnDensity: 1.5,
+            obstacleDensity: 2,
+            catSpeed: 1,
+            startingLevel: 1
+        };
+        if (settings) {
+            this.applySettings(settings);
+        }
         
         // Game state
         this.isRunning = false;
@@ -17,7 +28,7 @@ export class Game {
         this.phase = 'collection';  // 'collection', 'transition', 'water', 'end'
         
         // Level system
-        this.currentLevel = 1;
+        this.currentLevel = this.settings.startingLevel;
         
         // Stun state (when hitting obstacles)
         this.isStunned = false;
@@ -128,6 +139,24 @@ export class Game {
         window.addEventListener('resize', () => this.onResize());
     }
     
+    applySettings(settings) {
+        // Update internal settings
+        this.settings.yarnDensity = settings.yarnDensity;
+        this.settings.obstacleDensity = settings.obstacleDensity;
+        this.settings.catSpeed = settings.catSpeed;
+        this.settings.startingLevel = settings.startingLevel;
+        
+        // Apply starting level if game hasn't started yet
+        if (!this.isRunning) {
+            this.currentLevel = this.settings.startingLevel;
+        }
+        
+        // Update spawner if it exists
+        if (this.spawner) {
+            this.spawner.setDensitySettings(this.settings.yarnDensity, this.settings.obstacleDensity);
+        }
+    }
+    
     setupRenderer() {
         this.renderer = new THREE.WebGLRenderer({ 
             canvas: this.canvas, 
@@ -218,6 +247,17 @@ export class Game {
             nextLevelBtn.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 handleNextLevel();
+            });
+        }
+        
+        // Quit button (on level screen) - return to main menu
+        const quitBtn = document.getElementById('quit-btn');
+        if (quitBtn) {
+            const handleQuit = () => this.quitToMainMenu();
+            quitBtn.addEventListener('click', handleQuit);
+            quitBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleQuit();
             });
         }
     }
@@ -624,8 +664,8 @@ export class Game {
             }
         }
         
-        // Move cat forward
-        this.cat.moveForward(CONFIG.FORWARD_SPEED);
+        // Move cat forward (apply speed multiplier from settings)
+        this.cat.moveForward(CONFIG.FORWARD_SPEED * this.settings.catSpeed);
         this.distanceTraveled = Math.abs(this.cat.z);
         
         // Update ground
@@ -694,8 +734,8 @@ export class Game {
         // Force cat to center lane
         this.cat.forceLane(1);
         
-        // Slow forward movement
-        this.cat.moveForward(CONFIG.WATER_SPEED);
+        // Slow forward movement (apply speed multiplier)
+        this.cat.moveForward(CONFIG.WATER_SPEED * this.settings.catSpeed);
         this.distanceTraveled = Math.abs(this.cat.z);
         
         // Update ground (no more spawning)
@@ -732,7 +772,7 @@ export class Game {
         if (this.ranOutOfYarn) {
             // Walk to end of bridge, then end game
             if (this.cat.z > lastBridgeZ + 0.5) {
-                this.cat.moveForward(CONFIG.WATER_SPEED);
+                this.cat.moveForward(CONFIG.WATER_SPEED * this.settings.catSpeed);
             } else {
                 // Reached end of incomplete bridge - end game (failure)
                 this.endGame();
@@ -740,7 +780,7 @@ export class Game {
         } else {
             // Still have yarn or completed bridge - continue forward
             if (this.cat.z > lastBridgeZ + 0.5 || this.bridgeComplete) {
-                this.cat.moveForward(CONFIG.WATER_SPEED);
+                this.cat.moveForward(CONFIG.WATER_SPEED * this.settings.catSpeed);
             }
             
             // Check if cat has reached the shore/island (victory condition)
@@ -1008,12 +1048,41 @@ export class Game {
     }
     
     restart() {
-        // Full restart - reset level to 1
-        this.currentLevel = 1;
+        // Full restart - reset level to starting level from settings
+        this.currentLevel = this.settings.startingLevel;
         this.hideFailScreen();
         this.hideSuccessScreen();
         this.hideTitleScreen();
         this.resetLevel();
+    }
+    
+    quitToMainMenu() {
+        // Stop the game and return to title screen
+        this.isRunning = false;
+        this.currentLevel = this.settings.startingLevel;
+        
+        // Hide all screens
+        this.hideLevelScreen();
+        this.hideFailScreen();
+        this.hideSuccessScreen();
+        this.hideEndScreen();
+        this.hideMessage();
+        
+        // Reset the level
+        this.resetLevel();
+        
+        // Show the title screen
+        this.showTitleScreen();
+        
+        // Render once so scene is visible behind title
+        this.renderOnce();
+    }
+    
+    showTitleScreen() {
+        if (this.titleScreenEl) {
+            this.titleScreenEl.classList.remove('hidden');
+            this.titleScreenEl.classList.remove('fade-out');
+        }
     }
     
     clearObjects() {

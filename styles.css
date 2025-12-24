@@ -4,8 +4,6 @@
     box-sizing: border-box;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
-
 body {
     overflow: hidden;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -177,7 +175,7 @@ body {
 }
 
 .game-title {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: clamp(2.5rem, 8vw, 5rem);
     font-weight: 700;
     color: #fff;
@@ -211,7 +209,7 @@ body {
 }
 
 .controls-panel h2 {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 1.5rem;
     font-weight: 600;
     color: #FFD700;
@@ -244,7 +242,7 @@ body {
     border: 2px solid #5a5a6a;
     border-radius: 8px;
     color: #fff;
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 1.1rem;
     font-weight: 600;
     box-shadow: 
@@ -270,7 +268,7 @@ body {
 }
 
 #start-btn {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     background: linear-gradient(135deg, #FF69B4, #DA70D6, #9370DB);
     color: #fff;
     border: none;
@@ -329,8 +327,10 @@ body {
         rgba(30, 15, 45, 0.95) 100%
     );
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 40px;
     z-index: 90;
     transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
 }
@@ -348,7 +348,7 @@ body {
 }
 
 .level-label {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: clamp(2rem, 5vw, 3rem);
     font-weight: 600;
     color: rgba(255, 255, 255, 0.8);
@@ -357,7 +357,7 @@ body {
 }
 
 .level-number {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: clamp(6rem, 20vw, 12rem);
     font-weight: 700;
     background: linear-gradient(135deg, #FFD700, #FFA500, #FF69B4);
@@ -373,6 +373,27 @@ body {
     0% { transform: scale(0.5); opacity: 0; }
     70% { transform: scale(1.1); }
     100% { transform: scale(1); opacity: 1; }
+}
+
+#quit-btn {
+    font-family: Arial, Helvetica, sans-serif;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 12px 30px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#quit-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.9);
 }
 
 /* Fail Screen */
@@ -397,7 +418,7 @@ body {
 }
 
 .fail-title {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: clamp(2.5rem, 8vw, 4rem);
     font-weight: 700;
     background: linear-gradient(135deg, #FF6B6B, #EE5A5A, #DC143C);
@@ -410,14 +431,14 @@ body {
 }
 
 .fail-level {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 1.5rem;
     color: rgba(255, 255, 255, 0.7);
     margin-bottom: 20px;
 }
 
 .fail-stats {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 1.2rem;
     color: rgba(255, 255, 255, 0.8);
     text-align: center;
@@ -426,7 +447,7 @@ body {
 }
 
 #retry-btn {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     background: linear-gradient(135deg, #FF6B6B, #EE5A5A, #DC143C);
     color: #fff;
     border: none;
@@ -467,7 +488,7 @@ body {
 }
 
 .success-title {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: clamp(2.5rem, 8vw, 4rem);
     font-weight: 700;
     background: linear-gradient(135deg, #90EE90, #32CD32, #228B22);
@@ -486,14 +507,14 @@ body {
 }
 
 .success-level {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     font-size: 1.5rem;
     color: rgba(255, 255, 255, 0.8);
     margin-bottom: 30px;
 }
 
 #next-level-btn {
-    font-family: 'Fredoka', cursive;
+    font-family: Arial, Helvetica, sans-serif;
     background: linear-gradient(135deg, #90EE90, #32CD32, #228B22);
     color: #fff;
     border: none;
@@ -517,6 +538,211 @@ body {
     box-shadow: 
         0 10px 30px rgba(50, 205, 50, 0.6),
         0 0 60px rgba(34, 139, 34, 0.5);
+}
+
+/* Title Screen Buttons */
+.title-buttons {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#settings-btn {
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(135deg, #4a4a6a, #3a3a5a, #2a2a4a);
+    color: #fff;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 18px 40px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    box-shadow: 
+        0 6px 20px rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(147, 112, 219, 0.2);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 1px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#settings-btn:hover {
+    transform: scale(1.05) translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.4),
+        0 0 40px rgba(147, 112, 219, 0.4);
+}
+
+/* Settings Modal */
+#settings-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(30, 15, 45, 0.98) 0%,
+        rgba(50, 25, 70, 0.96) 30%,
+        rgba(40, 20, 55, 0.98) 70%,
+        rgba(20, 10, 30, 0.99) 100%
+    );
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 110;
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.settings-content {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    padding: 40px 50px;
+    max-width: 500px;
+    width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.settings-title {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #FFD700, #FFA500, #FF69B4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.setting-row {
+    margin-bottom: 28px;
+}
+
+.setting-row label {
+    display: block;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 10px;
+}
+
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.slider-min,
+.slider-max {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+    min-width: 35px;
+    text-align: center;
+}
+
+.slider-value {
+    display: block;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #FFD700;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Custom Slider Styling */
+.setting-row input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 8px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.25));
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+.setting-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #FF69B4, #DA70D6, #9370DB);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 
+        0 2px 8px rgba(255, 105, 180, 0.5),
+        0 0 15px rgba(147, 112, 219, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.setting-row input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 
+        0 3px 12px rgba(255, 105, 180, 0.7),
+        0 0 25px rgba(147, 112, 219, 0.6);
+}
+
+.setting-row input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #FF69B4, #DA70D6, #9370DB);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 
+        0 2px 8px rgba(255, 105, 180, 0.5),
+        0 0 15px rgba(147, 112, 219, 0.4);
+}
+
+.setting-row input[type="range"]::-moz-range-track {
+    height: 8px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.25));
+    border-radius: 4px;
+}
+
+#settings-close-btn {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(135deg, #FF69B4, #DA70D6, #9370DB);
+    color: #fff;
+    border: none;
+    padding: 16px 40px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 
+        0 6px 20px rgba(255, 105, 180, 0.4),
+        0 0 30px rgba(147, 112, 219, 0.3);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 1px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#settings-close-btn:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 
+        0 10px 30px rgba(255, 105, 180, 0.6),
+        0 0 50px rgba(147, 112, 219, 0.5);
 }
 
 
