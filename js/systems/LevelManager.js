@@ -3,8 +3,9 @@ import { CONFIG } from '../config.js';
 import { Bridge } from '../entities/Bridge.js';
 
 export class LevelManager {
-    constructor(scene) {
+    constructor(scene, soundManager) {
         this.scene = scene;
+        this.soundManager = soundManager;
         this.bridges = [];
         this.waterPlane = null;
         this.waterSurface = null;
@@ -321,11 +322,17 @@ export class LevelManager {
             return true;  // Done building (no more yarn)
         }
         
-        // Consume one yarn and build bridge piece
-        cat.removeFromStack();
+        // Consume one yarn (FIFO - first collected, first used) and get its color
+        const yarnColor = cat.removeFromStack();
         
-        const bridge = new Bridge(this.scene, this.nextBridgeZ);
+        // Build bridge piece with the consumed yarn's color
+        const bridge = new Bridge(this.scene, this.nextBridgeZ, yarnColor);
         this.bridges.push(bridge);
+        
+        // Play bridge building sound
+        if (this.soundManager) {
+            this.soundManager.playBridge();
+        }
         
         // Move to next position
         this.nextBridgeZ -= CONFIG.YARN_BRIDGE_DISTANCE;

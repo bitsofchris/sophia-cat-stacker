@@ -2,9 +2,10 @@
 import { CONFIG } from '../config.js';
 
 export class Bridge {
-    constructor(scene, z) {
+    constructor(scene, z, color = null) {
         this.scene = scene;
         this.z = z;
+        this.color = color || CONFIG.BRIDGE.COLOR;
         
         // Create mesh
         this.mesh = this.createMesh();
@@ -19,7 +20,7 @@ export class Bridge {
             CONFIG.BRIDGE.DEPTH
         );
         const material = new THREE.MeshLambertMaterial({ 
-            color: CONFIG.BRIDGE.COLOR 
+            color: this.color 
         });
         return new THREE.Mesh(geometry, material);
     }

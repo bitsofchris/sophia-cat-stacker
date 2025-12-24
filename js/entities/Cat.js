@@ -240,7 +240,7 @@ export class Cat {
             const waveOffset = Math.sin(Date.now() * 0.005 + i * 0.5) * 0.05;
             const bounceOffset = Math.sin(Date.now() * 0.008 + i * 0.3) * 0.08;
             
-            yarn.position.set(
+            yarn.mesh.position.set(
                 this.tailPositions[i] + waveOffset,
                 this.tailHeight + bounceOffset,
                 this.z + zOffset
@@ -294,23 +294,25 @@ export class Cat {
         
         // Add to scene directly (not as child, for independent positioning)
         this.scene.add(yarnMesh);
-        this.stack.push(yarnMesh);
+        // Store both mesh and color for FIFO consumption
+        this.stack.push({ mesh: yarnMesh, color });
         this.tailPositions.push(this.x);
         
         return yarnMesh;
     }
     
-    // Remove last yarn from tail (the one furthest back)
+    // Remove first yarn from tail (FIFO - first collected, first used)
     removeFromStack() {
         if (this.stack.length === 0) return null;
         
-        const lastYarn = this.stack.pop();
-        this.tailPositions.pop();
-        this.scene.remove(lastYarn);
-        lastYarn.geometry.dispose();
-        lastYarn.material.dispose();
+        const firstYarn = this.stack.shift(); // Remove from front (FIFO)
+        this.tailPositions.shift(); // Remove corresponding position
+        this.scene.remove(firstYarn.mesh);
+        firstYarn.mesh.geometry.dispose();
+        firstYarn.mesh.material.dispose();
         
-        return lastYarn;
+        // Return the color for bridge building
+        return firstYarn.color;
     }
     
     getStackCount() {

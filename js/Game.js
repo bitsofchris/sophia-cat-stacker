@@ -5,6 +5,7 @@ import { Spawner } from './systems/Spawner.js';
 import { CollisionSystem } from './systems/CollisionSystem.js';
 import { LevelManager } from './systems/LevelManager.js';
 import { Snow } from './systems/Snow.js';
+import { SoundManager } from './systems/SoundManager.js';
 
 export class Game {
     constructor(canvas) {
@@ -67,7 +68,7 @@ export class Game {
         this.cat = new Cat(this.scene);
         
         // Create spawner system
-        this.spawner = new Spawner(this.scene);
+        this.spawner = new Spawner(this.scene, this.currentLevel, this.getYarnRequired());
         
         // Create collision system
         this.collisionSystem = new CollisionSystem();
@@ -76,8 +77,11 @@ export class Game {
             (triangle) => this.onTriangleHit(triangle)
         );
         
+        // Create sound manager
+        this.soundManager = new SoundManager();
+        
         // Create level manager
-        this.levelManager = new LevelManager(this.scene);
+        this.levelManager = new LevelManager(this.scene, this.soundManager);
         
         // Create snow particle system
         this.snow = new Snow(this.scene);
@@ -605,6 +609,8 @@ export class Game {
         this.yarnCollected++;
         // Add visual yarn to cat's stack (Phase 5 will enhance this)
         this.cat.addToStack(yarn.getColor());
+        // Play pickup sound
+        this.soundManager.playPickup();
     }
     
     onTriangleHit(triangle) {
@@ -616,6 +622,9 @@ export class Game {
         if (this.cat.getStackCount() > 0) {
             this.cat.removeFromStack();
         }
+        
+        // Play damage sound
+        this.soundManager.playDamage();
         
         // Screen shake effect
         this.triggerScreenShake();
@@ -687,7 +696,6 @@ export class Game {
     startWater() {
         this.phase = 'water';
         this.hideMessage();
-        this.showMessage('Building Bridge...');
     }
     
     clearSpawnedObjects() {
@@ -723,6 +731,7 @@ export class Game {
         const reachedIsland = bridge >= CONFIG.WATER.DEPTH;
         
         if (reachedIsland) {
+            this.soundManager.playVictory();
             this.showSuccessScreen();
         } else {
             this.showFailScreen();
@@ -850,6 +859,7 @@ export class Game {
         
         // Reset spawner
         this.spawner.reset();
+        this.spawner.setLevelInfo(this.currentLevel, this.getYarnRequired());
         
         // Reset level manager
         this.levelManager.reset();
@@ -890,6 +900,7 @@ export class Game {
         
         // Reset spawner
         this.spawner.reset();
+        this.spawner.setLevelInfo(this.currentLevel, this.getYarnRequired());
         
         // Reset level manager
         this.levelManager.reset();
