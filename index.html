@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Stack Dash</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- UI Overlay -->
+        <div id="ui-overlay">
+            <div id="yarn-counter">Yarn: <span id="yarn-count">0</span></div>
+            <div id="distance-counter">Distance: <span id="distance-count">0</span></div>
+        </div>
+        
+        <!-- Message Display -->
+        <div id="message-display" class="hidden"></div>
+        
+        <!-- End Screen -->
+        <div id="end-screen" class="hidden">
+            <h1>Game Over!</h1>
+            <div id="score-breakdown"></div>
+            <button id="restart-btn">Play Again</button>
+            <p class="hint">Press R to restart</p>
+        </div>
+    </div>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Game Modules -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+
