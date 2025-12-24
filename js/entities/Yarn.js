@@ -19,9 +19,44 @@ export class Yarn {
     }
     
     createMesh() {
+        // Create a yarn ball with wrapped texture effect
+        const yarnGroup = new THREE.Group();
+        
+        // Main ball
         const geometry = new THREE.SphereGeometry(CONFIG.YARN.RADIUS, 16, 16);
         const material = new THREE.MeshLambertMaterial({ color: this.color });
-        return new THREE.Mesh(geometry, material);
+        const ball = new THREE.Mesh(geometry, material);
+        yarnGroup.add(ball);
+        
+        // Add "wrap" lines to make it look like yarn (torus rings)
+        const wrapColor = this.darkenColor(this.color, 0.7);
+        const wrapMaterial = new THREE.MeshLambertMaterial({ color: wrapColor });
+        
+        // Horizontal wraps
+        for (let i = 0; i < 3; i++) {
+            const torusGeometry = new THREE.TorusGeometry(CONFIG.YARN.RADIUS * 0.9, 0.02, 8, 16);
+            const wrap = new THREE.Mesh(torusGeometry, wrapMaterial);
+            wrap.rotation.x = Math.PI / 2;
+            wrap.position.y = (i - 1) * 0.12;
+            yarnGroup.add(wrap);
+        }
+        
+        // Vertical wraps
+        for (let i = 0; i < 2; i++) {
+            const torusGeometry = new THREE.TorusGeometry(CONFIG.YARN.RADIUS * 0.85, 0.02, 8, 16);
+            const wrap = new THREE.Mesh(torusGeometry, wrapMaterial);
+            wrap.rotation.y = (i * Math.PI / 2) + Math.PI / 4;
+            yarnGroup.add(wrap);
+        }
+        
+        return yarnGroup;
+    }
+    
+    darkenColor(color, factor) {
+        const r = ((color >> 16) & 255) * factor;
+        const g = ((color >> 8) & 255) * factor;
+        const b = (color & 255) * factor;
+        return (Math.floor(r) << 16) | (Math.floor(g) << 8) | Math.floor(b);
     }
     
     update(deltaTime) {
@@ -55,8 +90,17 @@ export class Yarn {
     
     dispose() {
         this.scene.remove(this.mesh);
-        this.mesh.geometry.dispose();
-        this.mesh.material.dispose();
+        // Handle group or single mesh
+        if (this.mesh.children) {
+            this.mesh.children.forEach(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) child.material.dispose();
+            });
+        } else {
+            if (this.mesh.geometry) this.mesh.geometry.dispose();
+            if (this.mesh.material) this.mesh.material.dispose();
+        }
     }
 }
+
 

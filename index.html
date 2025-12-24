@@ -10,6 +10,36 @@
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
         
+        <!-- Title Screen -->
+        <div id="title-screen">
+            <h1 class="game-title">Sophia's Cat Stacker</h1>
+            
+            <div class="controls-panel">
+                <h2>How to Play</h2>
+                <div class="control-row">
+                    <div class="key-group">
+                        <span class="key">←</span>
+                        <span class="key">→</span>
+                    </div>
+                    <span class="control-desc">or</span>
+                    <div class="key-group">
+                        <span class="key">A</span>
+                        <span class="key">D</span>
+                    </div>
+                    <span class="control-desc">Switch lanes</span>
+                </div>
+                <div class="control-row">
+                    <div class="key-group">
+                        <span class="key wide">Click</span>
+                    </div>
+                    <span class="control-desc">Left/Right side of screen</span>
+                </div>
+                <p class="goal-text">Collect yarn, avoid obstacles, build a bridge!</p>
+            </div>
+            
+            <button id="start-btn">Start Game</button>
+        </div>
+        
         <!-- UI Overlay -->
         <div id="ui-overlay">
             <div id="yarn-counter">Yarn: <span id="yarn-count">0</span></div>
@@ -35,4 +65,5 @@
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
+
 

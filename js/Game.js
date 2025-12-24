@@ -40,6 +40,21 @@ export class Game {
         this.setupCamera();
         this.setupLighting();
         
+        // Load textures
+        this.textureLoader = new THREE.TextureLoader();
+        
+        // Ground texture
+        this.groundTexture = this.textureLoader.load('kenney_pattern-pack/PNG/Default/pattern_22.png');
+        this.groundTexture.wrapS = THREE.RepeatWrapping;
+        this.groundTexture.wrapT = THREE.RepeatWrapping;
+        this.groundTexture.repeat.set(2, 1);
+        
+        // Water texture
+        this.waterTexture = this.textureLoader.load('kenney_pattern-pack/PNG/Default/pattern_30.png');
+        this.waterTexture.wrapS = THREE.RepeatWrapping;
+        this.waterTexture.wrapT = THREE.RepeatWrapping;
+        this.waterTexture.repeat.set(3, 8);
+        
         // Create player
         this.cat = new Cat(this.scene);
         
@@ -53,11 +68,17 @@ export class Game {
             (triangle) => this.onTriangleHit(triangle)
         );
         
-        // Create level manager
-        this.levelManager = new LevelManager(this.scene);
+        // Create level manager (pass water texture)
+        this.levelManager = new LevelManager(this.scene, this.waterTexture);
         
         // Initial ground tiles
         this.spawnInitialGround();
+        
+        // Pre-generate the entire level (yarn, triangles)
+        this.spawner.generateFullLevel();
+        
+        // Create water and island at start (visible in distance)
+        this.levelManager.createWater();
         
         // Position camera to follow cat
         this.updateCameraPosition(true);
@@ -188,10 +209,24 @@ export class Game {
             CONFIG.GROUND.HEIGHT,
             CONFIG.GROUND.DEPTH
         );
-        const material = new THREE.MeshLambertMaterial({ 
-            color: CONFIG.GROUND.COLOR 
+        
+        // Use textured material for the top, solid for sides
+        const topMaterial = new THREE.MeshLambertMaterial({ 
+            map: this.groundTexture,
+            color: 0xCCCCCC  // Slight tint
         });
-        const tile = new THREE.Mesh(geometry, material);
+        const sideMaterial = new THREE.MeshLambertMaterial({ 
+            color: 0x555555  // Dark sides
+        });
+        
+        // Create materials array: [right, left, top, bottom, front, back]
+        const materials = [
+            sideMaterial, sideMaterial,
+            topMaterial, sideMaterial,
+            sideMaterial, sideMaterial
+        ];
+        
+        const tile = new THREE.Mesh(geometry, materials);
         
         tile.position.set(0, -CONFIG.GROUND.HEIGHT / 2, z);
         this.scene.add(tile);
@@ -203,13 +238,17 @@ export class Game {
     updateGround() {
         const catZ = this.cat.z;
         
-        // Spawn new tiles ahead
+        // Spawn new tiles ahead, but STOP before water starts
         const spawnThreshold = catZ - CONFIG.SPAWN_AHEAD_DISTANCE;
+        const waterEdge = CONFIG.WATER.START_Z + 1;  // Stop tiles before water
         const lastTile = this.groundTiles[this.groundTiles.length - 1];
         
         if (lastTile && lastTile.position.z > spawnThreshold) {
             const newZ = lastTile.position.z - CONFIG.GROUND.DEPTH;
-            this.spawnGroundTile(newZ);
+            // Only spawn if the tile won't go into the water
+            if (newZ > waterEdge) {
+                this.spawnGroundTile(newZ);
+            }
         }
         
         // Remove tiles behind
@@ -218,7 +257,12 @@ export class Game {
             const tile = this.groundTiles.shift();
             this.scene.remove(tile);
             tile.geometry.dispose();
-            tile.material.dispose();
+            // Handle array of materials
+            if (Array.isArray(tile.material)) {
+                tile.material.forEach(m => m.dispose());
+            } else {
+                tile.material.dispose();
+            }
         }
     }
     
@@ -292,6 +336,11 @@ export class Game {
         this.animate();
     }
     
+    renderOnce() {
+        // Render a single frame (for title screen background)
+        this.renderer.render(this.scene, this.camera);
+    }
+    
     animate() {
         if (!this.isRunning) return;
         
@@ -330,11 +379,15 @@ export class Game {
             if (performance.now() >= this.stunEndTime) {
                 this.isStunned = false;
                 // Reset cat color
-                this.cat.mesh.material.color.setHex(CONFIG.CAT.COLOR);
+                this.cat.resetColors();
             } else {
                 // Flash cat red while stunned
                 const flash = Math.sin(performance.now() * 0.02) > 0;
-                this.cat.mesh.material.color.setHex(flash ? 0xFF0000 : CONFIG.CAT.COLOR);
+                if (flash) {
+                    this.cat.setFlashColor(0xFF0000);
+                } else {
+                    this.cat.resetColors();
+                }
                 
                 // Still update cat position (for tail) but don't move forward
                 this.cat.update();
@@ -411,7 +464,7 @@ export class Game {
         this.cat.moveForward(CONFIG.WATER_SPEED);
         this.distanceTraveled = Math.abs(this.cat.z);
         
-        // Update ground
+        // Update ground (no more spawning)
         this.updateGround();
         
         // Check if reached water
@@ -444,14 +497,31 @@ export class Game {
         this.phase = 'transition';
         this.showMessage('Approaching Water!');
         
-        // Create water section
-        this.levelManager.createWater();
+        // Water already created at start - no need to create or clear
+        // Objects behind the cat are already despawned naturally
     }
     
     startWater() {
         this.phase = 'water';
         this.hideMessage();
         this.showMessage('Building Bridge...');
+    }
+    
+    clearSpawnedObjects() {
+        // Clear all spawned yarns and triangles for clean water section
+        const yarns = this.spawner.getYarns();
+        const triangles = this.spawner.getTriangles();
+        
+        for (const yarn of yarns) {
+            yarn.dispose();
+        }
+        for (const triangle of triangles) {
+            triangle.dispose();
+        }
+        
+        // Reset spawner arrays
+        this.spawner.yarns = [];
+        this.spawner.triangles = [];
     }
     
     endGame() {
@@ -507,6 +577,10 @@ export class Game {
         this.groundTiles = [];
         this.spawnInitialGround();
         
+        // Re-generate level and water
+        this.spawner.generateFullLevel();
+        this.levelManager.createWater();
+        
         // Hide UI
         this.hideMessage();
         this.hideEndScreen();
@@ -520,7 +594,12 @@ export class Game {
         for (const tile of this.groundTiles) {
             this.scene.remove(tile);
             tile.geometry.dispose();
-            tile.material.dispose();
+            // Handle array of materials
+            if (Array.isArray(tile.material)) {
+                tile.material.forEach(m => m.dispose());
+            } else {
+                tile.material.dispose();
+            }
         }
         this.groundTiles = [];
         

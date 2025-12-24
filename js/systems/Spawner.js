@@ -1,4 +1,4 @@
-// Spawner System - Procedural object generation
+// Spawner System - Pre-generated level
 import { CONFIG } from '../config.js';
 import { Yarn } from '../entities/Yarn.js';
 import { Triangle } from '../entities/Triangle.js';
@@ -8,7 +8,7 @@ export class Spawner {
         this.scene = scene;
         this.yarns = [];
         this.triangles = [];
-        this.nextRowZ = -10;  // First row spawn position
+        this.generated = false;
     }
     
     getDifficulty(distance) {
@@ -41,17 +41,28 @@ export class Spawner {
         }
     }
     
-    update(catZ, distance) {
-        // Spawn new rows ahead of cat
-        const spawnThreshold = catZ - CONFIG.SPAWN_AHEAD_DISTANCE;
+    // Pre-generate the entire level at once
+    generateFullLevel() {
+        if (this.generated) return;
         
-        while (this.nextRowZ > spawnThreshold) {
+        // Generate rows from start to just before water
+        // Leave some empty space before water for visual clarity
+        const startZ = -10;
+        const endZ = -(CONFIG.LEVEL_END_DISTANCE - 5);  // Stop 5 units before water
+        
+        for (let z = startZ; z > endZ; z -= CONFIG.ROW_SPACING) {
+            const distance = Math.abs(z);
             const difficulty = this.getDifficulty(distance);
-            this.spawnRow(this.nextRowZ, difficulty);
-            this.nextRowZ -= CONFIG.ROW_SPACING;
+            this.spawnRow(z, difficulty);
         }
         
-        // Update all objects
+        this.generated = true;
+    }
+    
+    update(catZ, distance) {
+        // No dynamic spawning - level is pre-generated
+        
+        // Update all objects (rotation animations)
         for (const yarn of this.yarns) {
             if (!yarn.isCollected()) {
                 yarn.update();
@@ -109,7 +120,7 @@ export class Spawner {
         
         this.yarns = [];
         this.triangles = [];
-        this.nextRowZ = -10;
+        this.generated = false;
     }
     
     dispose() {

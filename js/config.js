@@ -59,10 +59,10 @@ export const CONFIG = {
     },
     
     WATER: {
-        WIDTH: 6,
-        DEPTH: 20,
-        COLOR: 0x1E90FF,          // Dodger blue
-        OPACITY: 0.7,
+        WIDTH: 8,                 // Wider than track
+        DEPTH: 25,                // Longer gap
+        COLOR: 0x0a1929,          // Dark navy blue
+        OPACITY: 0.95,
         START_Z: -105
     },
     
@@ -74,10 +74,11 @@ export const CONFIG = {
     
     // Difficulty Patterns
     // Y = Yarn, T = Triangle, X = Empty
+    // RULE: Always at least one safe lane (X or Y) - never all T's
     PATTERNS: {
-        easy: ['YXY', 'YYX', 'XYY', 'XXX', 'YXX', 'XYX'],
-        medium: ['YTX', 'XTY', 'YXT', 'XYX', 'TXX', 'XXY', 'TXY'],
-        hard: ['TYT', 'XTX', 'TXT', 'TTX', 'XTT', 'TXY', 'YTT']
+        easy: ['YXY', 'YYX', 'XYY', 'XXX', 'YXX', 'XYX', 'YYY', 'XXY'],
+        medium: ['YTX', 'XTY', 'YXX', 'XYX', 'TXX', 'XXY', 'YXY', 'XXT'],
+        hard: ['TYX', 'XTY', 'TXX', 'YTX', 'XYT', 'TXY', 'YXT', 'XXY']
     },
     
     // Difficulty thresholds (by distance traveled)
