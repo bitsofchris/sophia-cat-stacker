@@ -95,8 +95,10 @@ export class Game {
         
         // Pre-generate the entire level (yarn, triangles)
         const levelEndDistance = this.getLevelEndDistance();
+        const easyEndDistance = this.getEasyEndDistance();
+        const mediumEndDistance = this.getMediumEndDistance();
         const yarnRequired = this.getYarnRequired();
-        this.spawner.generateFullLevel(levelEndDistance);
+        this.spawner.generateFullLevel(levelEndDistance, easyEndDistance, mediumEndDistance);
         
         // Create water and island at start (visible in distance)
         this.levelManager.createWater(levelEndDistance, yarnRequired);
@@ -226,10 +228,22 @@ export class Game {
     }
     
     getLevelEndDistance() {
-        // Scale level length based on yarn requirement
-        const yarnRequired = this.getYarnRequired();
-        const extraYarn = yarnRequired - CONFIG.LEVEL.BASE_YARN_REQUIRED;
-        return CONFIG.BASE_LEVEL_DISTANCE + extraYarn * CONFIG.DISTANCE_PER_YARN;
+        // Scale level length by 12.5% per level (10-15% range)
+        // Level 1 = 150, Level 2 = 168.75, Level 3 = 189.84, etc.
+        // Cap at 5x base level distance (max 750 for base 150)
+        const maxDistance = CONFIG.BASE_LEVEL_DISTANCE * 5;
+        const calculatedDistance = CONFIG.BASE_LEVEL_DISTANCE * Math.pow(CONFIG.LEVEL_LENGTH_MULTIPLIER, this.currentLevel - 1);
+        return Math.min(calculatedDistance, maxDistance);
+    }
+    
+    getEasyEndDistance() {
+        // Easy section is 65% of level length
+        return this.getLevelEndDistance() * CONFIG.DIFFICULTY.EASY_PERCENT;
+    }
+    
+    getMediumEndDistance() {
+        // Medium section ends at 85% of level length
+        return this.getLevelEndDistance() * CONFIG.DIFFICULTY.MEDIUM_PERCENT;
     }
     
     handleKeyDown(e) {
@@ -932,8 +946,10 @@ export class Game {
         
         // Re-generate level and water
         const levelEndDistance = this.getLevelEndDistance();
+        const easyEndDistance = this.getEasyEndDistance();
+        const mediumEndDistance = this.getMediumEndDistance();
         const yarnRequired = this.getYarnRequired();
-        this.spawner.generateFullLevel(levelEndDistance);
+        this.spawner.generateFullLevel(levelEndDistance, easyEndDistance, mediumEndDistance);
         this.levelManager.createWater(levelEndDistance, yarnRequired);
         
         // Hide UI
@@ -977,8 +993,10 @@ export class Game {
         
         // Re-generate level and water
         const levelEndDistance = this.getLevelEndDistance();
+        const easyEndDistance = this.getEasyEndDistance();
+        const mediumEndDistance = this.getMediumEndDistance();
         const yarnRequired = this.getYarnRequired();
-        this.spawner.generateFullLevel(levelEndDistance);
+        this.spawner.generateFullLevel(levelEndDistance, easyEndDistance, mediumEndDistance);
         this.levelManager.createWater(levelEndDistance, yarnRequired);
         
         // Hide UI

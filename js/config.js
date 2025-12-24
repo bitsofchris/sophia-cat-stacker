@@ -14,7 +14,7 @@ export const CONFIG = {
     // Distances
     LEVEL_END_DISTANCE: 150,    // Base distance for level 1 (will be scaled)
     BASE_LEVEL_DISTANCE: 150,   // Base distance for level 1
-    DISTANCE_PER_YARN: 1.5,     // Additional distance per yarn required beyond base
+    LEVEL_LENGTH_MULTIPLIER: 1.125,  // Each level is 12.5% longer than previous (10-15% range)
     SPAWN_AHEAD_DISTANCE: 50,
     DESPAWN_BEHIND_DISTANCE: 10,
     ROW_SPACING: 7,              // distance between spawn rows (increased for more spacing and maneuverability)
@@ -91,10 +91,10 @@ export const CONFIG = {
         hard: ['TTX', 'XTT', 'TXT', 'TTY', 'YTT', 'TXT', 'TTX', 'XTT']    // Even more obstacles, still staggered
     },
     
-    // Difficulty thresholds (by distance traveled)
+    // Difficulty thresholds (by distance traveled - will be scaled per level)
     DIFFICULTY: {
-        EASY_END: 80,             // Stay easy for first 80 distance (53% of level)
-        MEDIUM_END: 130           // Medium until 130, then hard for final stretch
+        EASY_PERCENT: 0.65,       // Easy section is 65% of level (longer easy section)
+        MEDIUM_PERCENT: 0.85      // Medium until 85%, then hard for final 15%
     },
     
     // Camera

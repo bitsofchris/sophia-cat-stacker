@@ -18,9 +18,9 @@ export class Spawner {
         this.yarnRequired = yarnRequired;
     }
     
-    getDifficulty(distance) {
-        if (distance < CONFIG.DIFFICULTY.EASY_END) return 'easy';
-        if (distance < CONFIG.DIFFICULTY.MEDIUM_END) return 'medium';
+    getDifficulty(distance, easyEnd, mediumEnd) {
+        if (distance < easyEnd) return 'easy';
+        if (distance < mediumEnd) return 'medium';
         return 'hard';
     }
     
@@ -122,7 +122,7 @@ export class Spawner {
     }
     
     // Pre-generate the entire level at once
-    generateFullLevel(levelEndDistance) {
+    generateFullLevel(levelEndDistance, easyEndDistance, mediumEndDistance) {
         if (this.generated) return;
         
         // Calculate targets based on level requirements
@@ -147,7 +147,7 @@ export class Spawner {
         
         for (let z = startZ; z > endZ; z -= CONFIG.ROW_SPACING) {
             const distance = Math.abs(z);
-            const difficulty = this.getDifficulty(distance);
+            const difficulty = this.getDifficulty(distance, easyEndDistance, mediumEndDistance);
             rowsGenerated++;
             
             // Check if we need to enforce constraints
