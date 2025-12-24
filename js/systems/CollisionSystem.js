@@ -46,6 +46,10 @@ export class CollisionSystem {
         // Lane must match
         if (catLane !== objectLane) return false;
         
+        // Don't collide if cat is already in front of the obstacle
+        // (cat's z is less than object's z means cat is ahead)
+        if (catZ < objectZ) return false;
+        
         // Z distance must be within threshold
         const zDistance = Math.abs(catZ - objectZ);
         return zDistance < CONFIG.COLLISION_THRESHOLD;

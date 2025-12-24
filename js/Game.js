@@ -29,6 +29,7 @@ export class Game {
         
         // Bridge completion state
         this.bridgeComplete = false;
+        this.ranOutOfYarn = false;  // Track if cat ran out of yarn before reaching shore
         
         // Stats
         this.distanceTraveled = 0;
@@ -682,24 +683,39 @@ export class Game {
         // Build bridge using yarn (if not complete yet)
         if (!this.bridgeComplete) {
             const done = this.levelManager.buildBridge(this.cat, () => {
-                // Bridge building complete - mark as done but don't end game yet
+                // Bridge building complete
                 this.bridgeDistance = this.levelManager.getBridgeDistance();
+                const yarnRequired = this.getYarnRequired();
+                
+                // Check if we ran out of yarn before reaching shore
+                if (this.cat.getStackCount() === 0 && this.bridgeDistance < yarnRequired) {
+                    this.ranOutOfYarn = true;
+                }
                 this.bridgeComplete = true;
             });
         }
         
         // Move cat forward across the bridge
         const lastBridgeZ = this.levelManager.getLastBridgeZ();
+        const shoreZ = this.levelManager.waterStartZ - this.levelManager.waterDepth;
         
-        // Always move forward if there's bridge to walk on, or if bridge is complete
-        if (this.cat.z > lastBridgeZ + 0.5 || this.bridgeComplete) {
-            this.cat.moveForward(CONFIG.WATER_SPEED);
-        }
-        
-        // Check if cat has reached the shore/island (victory condition)
-        if (this.bridgeComplete) {
-            const shoreZ = this.levelManager.waterStartZ - this.levelManager.waterDepth;
-            if (this.cat.z <= shoreZ) {
+        // If ran out of yarn, stop at end of bridge
+        if (this.ranOutOfYarn) {
+            // Walk to end of bridge, then end game
+            if (this.cat.z > lastBridgeZ + 0.5) {
+                this.cat.moveForward(CONFIG.WATER_SPEED);
+            } else {
+                // Reached end of incomplete bridge - end game (failure)
+                this.endGame();
+            }
+        } else {
+            // Still have yarn or completed bridge - continue forward
+            if (this.cat.z > lastBridgeZ + 0.5 || this.bridgeComplete) {
+                this.cat.moveForward(CONFIG.WATER_SPEED);
+            }
+            
+            // Check if cat has reached the shore/island (victory condition)
+            if (this.bridgeComplete && this.cat.z <= shoreZ) {
                 this.endGame();
             }
         }
@@ -875,6 +891,7 @@ export class Game {
         this.yarnCollected = 0;
         this.bridgeDistance = 0;
         this.bridgeComplete = false;
+        this.ranOutOfYarn = false;
         this.nextRowZ = -10;
         this.isStunned = false;
         this.stunEndTime = 0;
@@ -919,6 +936,7 @@ export class Game {
         this.yarnCollected = 0;
         this.bridgeDistance = 0;
         this.bridgeComplete = false;
+        this.ranOutOfYarn = false;
         this.nextRowZ = -10;
         this.isStunned = false;
         this.stunEndTime = 0;
