@@ -58,8 +58,8 @@
                     <label for="yarn-density">Yarn Density</label>
                     <div class="slider-container">
                         <span class="slider-min">1x</span>
-                        <input type="range" id="yarn-density" min="1" max="20" value="1.5" step="0.5">
-                        <span class="slider-max">20x</span>
+                        <input type="range" id="yarn-density" min="1" max="50" value="1.5" step="0.5">
+                        <span class="slider-max">50x</span>
                     </div>
                     <span class="slider-value" id="yarn-density-value">1.5x</span>
                 </div>
@@ -113,7 +113,6 @@
                 <span class="level-label">Level</span>
                 <span id="level-number" class="level-number">1</span>
             </div>
-            <button id="quit-btn">Quit to Main Menu</button>
         </div>
         
         <!-- Fail Screen -->
@@ -121,15 +120,20 @@
             <h1 class="fail-title">Level Failed!</h1>
             <p class="fail-level">Level 1</p>
             <div class="fail-stats"></div>
-            <button id="retry-btn">Try Again</button>
-            <p class="hint">Press R to restart from Level 1</p>
+            <div class="end-buttons">
+                <button id="retry-btn">Try Again</button>
+                <button id="quit-fail-btn" class="quit-btn">Main Menu</button>
+            </div>
         </div>
         
         <!-- Success Screen -->
         <div id="success-screen" class="hidden">
             <h1 class="success-title">Level Complete!</h1>
             <p class="success-level">Level 1 Complete!</p>
-            <button id="next-level-btn">Next Level</button>
+            <div class="end-buttons">
+                <button id="next-level-btn">Next Level</button>
+                <button id="quit-success-btn" class="quit-btn">Main Menu</button>
+            </div>
         </div>
         
         <!-- End Screen -->

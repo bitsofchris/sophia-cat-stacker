@@ -149,12 +149,24 @@ export class Spawner {
         // Leave some empty space before water for visual clarity
         const startZ = -10;
         const endZ = -(levelEndDistance - 5);  // Stop 5 units before water
+        const levelLength = startZ - endZ;
+        
+        // Dynamic row spacing based on yarn density
+        // At 1x density, use normal spacing (7). At higher density, reduce spacing to fit more rows.
+        // Calculate how many rows we need: targetYarnCount / avgYarnsPerRow (assume ~2 yarns/row average)
+        const avgYarnsPerRow = 2;
+        const neededRows = Math.ceil(targetYarnCount / avgYarnsPerRow);
+        const minRowSpacing = 2.5;  // Minimum spacing to prevent overlap
+        const maxRowSpacing = CONFIG.ROW_SPACING;
+        
+        // Calculate spacing to fit needed rows, clamped to min/max
+        let rowSpacing = Math.max(minRowSpacing, Math.min(maxRowSpacing, levelLength / neededRows));
         
         // Calculate total rows to estimate progress
-        const totalRows = Math.floor((startZ - endZ) / CONFIG.ROW_SPACING);
+        const totalRows = Math.floor(levelLength / rowSpacing);
         let rowsGenerated = 0;
         
-        for (let z = startZ; z > endZ; z -= CONFIG.ROW_SPACING) {
+        for (let z = startZ; z > endZ; z -= rowSpacing) {
             const distance = Math.abs(z);
             const difficulty = this.getDifficulty(distance, easyEndDistance, mediumEndDistance);
             rowsGenerated++;

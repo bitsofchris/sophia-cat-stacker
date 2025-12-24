@@ -84,6 +84,8 @@ export class Game {
         
         // Create spawner system
         this.spawner = new Spawner(this.scene, this.currentLevel, this.getYarnRequired());
+        // Apply density settings to spawner
+        this.spawner.setDensitySettings(this.settings.yarnDensity, this.settings.obstacleDensity);
         
         // Create collision system
         this.collisionSystem = new CollisionSystem();
@@ -146,13 +148,27 @@ export class Game {
         this.settings.catSpeed = settings.catSpeed;
         this.settings.startingLevel = settings.startingLevel;
         
-        // Apply starting level if game hasn't started yet
-        if (!this.isRunning) {
+        // If game hasn't started yet, regenerate the level with new settings
+        if (!this.isRunning && this.spawner) {
             this.currentLevel = this.settings.startingLevel;
-        }
-        
-        // Update spawner if it exists
-        if (this.spawner) {
+            
+            // Reset and regenerate level with new settings
+            this.spawner.reset();
+            this.spawner.setLevelInfo(this.currentLevel, this.getYarnRequired());
+            this.spawner.setDensitySettings(this.settings.yarnDensity, this.settings.obstacleDensity);
+            
+            // Reset level manager
+            this.levelManager.reset();
+            
+            // Regenerate level
+            const levelEndDistance = this.getLevelEndDistance();
+            const easyEndDistance = this.getEasyEndDistance();
+            const mediumEndDistance = this.getMediumEndDistance();
+            const yarnRequired = this.getYarnRequired();
+            this.spawner.generateFullLevel(levelEndDistance, easyEndDistance, mediumEndDistance);
+            this.levelManager.createWater(levelEndDistance, yarnRequired);
+        } else if (this.spawner) {
+            // Game is running, just update density for next level
             this.spawner.setDensitySettings(this.settings.yarnDensity, this.settings.obstacleDensity);
         }
     }
@@ -250,12 +266,22 @@ export class Game {
             });
         }
         
-        // Quit button (on level screen) - return to main menu
-        const quitBtn = document.getElementById('quit-btn');
-        if (quitBtn) {
+        // Quit buttons (on fail/success screens) - return to main menu
+        const quitFailBtn = document.getElementById('quit-fail-btn');
+        if (quitFailBtn) {
             const handleQuit = () => this.quitToMainMenu();
-            quitBtn.addEventListener('click', handleQuit);
-            quitBtn.addEventListener('touchend', (e) => {
+            quitFailBtn.addEventListener('click', handleQuit);
+            quitFailBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                handleQuit();
+            });
+        }
+        
+        const quitSuccessBtn = document.getElementById('quit-success-btn');
+        if (quitSuccessBtn) {
+            const handleQuit = () => this.quitToMainMenu();
+            quitSuccessBtn.addEventListener('click', handleQuit);
+            quitSuccessBtn.addEventListener('touchend', (e) => {
                 e.preventDefault();
                 handleQuit();
             });
@@ -972,6 +998,7 @@ export class Game {
         // Reset spawner
         this.spawner.reset();
         this.spawner.setLevelInfo(this.currentLevel, this.getYarnRequired());
+        this.spawner.setDensitySettings(this.settings.yarnDensity, this.settings.obstacleDensity);
         
         // Reset level manager
         this.levelManager.reset();
@@ -1019,6 +1046,7 @@ export class Game {
         // Reset spawner
         this.spawner.reset();
         this.spawner.setLevelInfo(this.currentLevel, this.getYarnRequired());
+        this.spawner.setDensitySettings(this.settings.yarnDensity, this.settings.obstacleDensity);
         
         // Reset level manager
         this.levelManager.reset();

@@ -327,10 +327,8 @@ body {
         rgba(30, 15, 45, 0.95) 100%
     );
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 40px;
     z-index: 90;
     transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
 }
@@ -375,13 +373,21 @@ body {
     100% { transform: scale(1); opacity: 1; }
 }
 
-#quit-btn {
+.end-buttons {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.quit-btn {
     font-family: Arial, Helvetica, sans-serif;
     background: transparent;
     color: rgba(255, 255, 255, 0.7);
     border: 2px solid rgba(255, 255, 255, 0.3);
-    padding: 12px 30px;
-    font-size: 1rem;
+    padding: 14px 30px;
+    font-size: 1.1rem;
     font-weight: 500;
     border-radius: 30px;
     cursor: pointer;
@@ -390,7 +396,7 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
-#quit-btn:hover {
+.quit-btn:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.5);
     color: rgba(255, 255, 255, 0.9);
@@ -612,6 +618,8 @@ body {
     width: 90vw;
     max-height: 90vh;
     overflow-y: auto;
+    touch-action: pan-y; /* Allow vertical scroll but let sliders handle horizontal */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .settings-title {
@@ -643,6 +651,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    touch-action: pan-x; /* Allow horizontal touch for slider */
 }
 
 .slider-min,
@@ -674,13 +683,15 @@ body {
     border-radius: 4px;
     outline: none;
     cursor: pointer;
+    touch-action: pan-x; /* Allow horizontal touch sliding */
+    -webkit-tap-highlight-color: transparent;
 }
 
 .setting-row input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     background: linear-gradient(135deg, #FF69B4, #DA70D6, #9370DB);
     border-radius: 50%;
     cursor: pointer;
@@ -690,16 +701,21 @@ body {
     transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.setting-row input[type="range"]::-webkit-slider-thumb:hover {
+.setting-row input[type="range"]::-webkit-slider-thumb:hover,
+.setting-row input[type="range"]::-webkit-slider-thumb:active {
     transform: scale(1.15);
     box-shadow: 
         0 3px 12px rgba(255, 105, 180, 0.7),
         0 0 25px rgba(147, 112, 219, 0.6);
 }
 
+.setting-row input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.2);
+}
+
 .setting-row input[type="range"]::-moz-range-thumb {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     background: linear-gradient(135deg, #FF69B4, #DA70D6, #9370DB);
     border: none;
     border-radius: 50%;
@@ -707,6 +723,14 @@ body {
     box-shadow: 
         0 2px 8px rgba(255, 105, 180, 0.5),
         0 0 15px rgba(147, 112, 219, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.setting-row input[type="range"]:active::-moz-range-thumb {
+    transform: scale(1.2);
+    box-shadow: 
+        0 3px 12px rgba(255, 105, 180, 0.7),
+        0 0 25px rgba(147, 112, 219, 0.6);
 }
 
 .setting-row input[type="range"]::-moz-range-track {

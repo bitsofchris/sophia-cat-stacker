@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsModal.classList.add('hidden');
         // Apply settings to game
         game.applySettings(window.gameSettings);
+        console.log('Settings applied:', JSON.stringify(window.gameSettings));
     };
     
     // Settings button handlers
