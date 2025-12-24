@@ -7,7 +7,7 @@ export const CONFIG = {
     LANE_WIDTH: 1.5,
     
     // Movement Speeds
-    FORWARD_SPEED: 0.15,         // units per frame
+    FORWARD_SPEED: 0.20,         // units per frame (increased for faster scrolling)
     WATER_SPEED: 0.08,           // slower during water crossing
     LANE_SWITCH_DURATION: 150,   // milliseconds
     
@@ -17,7 +17,7 @@ export const CONFIG = {
     DISTANCE_PER_YARN: 1.5,     // Additional distance per yarn required beyond base
     SPAWN_AHEAD_DISTANCE: 50,
     DESPAWN_BEHIND_DISTANCE: 10,
-    ROW_SPACING: 5,              // distance between spawn rows (increased for more spacing)
+    ROW_SPACING: 7,              // distance between spawn rows (increased for more spacing and maneuverability)
     
     // Collision
     COLLISION_THRESHOLD: 1.5,    // Z-distance for collision detection

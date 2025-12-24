@@ -14,18 +14,21 @@ export class LevelManager {
         
         // Bridge building state
         this.waterStartZ = CONFIG.WATER.START_Z;  // Default, will be updated per level
+        this.waterDepth = CONFIG.WATER.DEPTH;     // Default, will be updated per level
         this.nextBridgeZ = CONFIG.WATER.START_Z;
         this.bridgeTimer = 0;
         this.bridgeBuildInterval = 200; // ms between bridge pieces
     }
     
-    createWater(levelEndDistance) {
+    createWater(levelEndDistance, yarnRequired) {
         // Calculate water start position based on level end distance
         this.waterStartZ = -levelEndDistance;
+        // Water depth equals yarn requirement (each yarn = 1 unit of bridge)
+        this.waterDepth = yarnRequired;
         this.nextBridgeZ = this.waterStartZ;
         // Extra wide ICE plane - fills entire screen
         const iceWidth = 60;
-        const iceGeometry = new THREE.PlaneGeometry(iceWidth, CONFIG.WATER.DEPTH);
+        const iceGeometry = new THREE.PlaneGeometry(iceWidth, this.waterDepth);
         
         // Solid light blue icy material with shine
         const iceMaterial = new THREE.MeshPhongMaterial({
@@ -38,7 +41,7 @@ export class LevelManager {
         
         this.waterSurface = new THREE.Mesh(iceGeometry, iceMaterial);
         this.waterSurface.rotation.x = -Math.PI / 2;
-        this.waterSurface.position.set(0, 0.02, this.waterStartZ - CONFIG.WATER.DEPTH / 2);
+        this.waterSurface.position.set(0, 0.02, this.waterStartZ - this.waterDepth / 2);
         this.scene.add(this.waterSurface);
         
         // Add white streaks across the ice for frozen look
@@ -274,7 +277,7 @@ export class LevelManager {
         }
         
         // Position the whole island
-        islandGroup.position.set(0, -0.5, this.waterStartZ - CONFIG.WATER.DEPTH - 6);
+        islandGroup.position.set(0, -0.5, this.waterStartZ - this.waterDepth - 6);
         this.scene.add(islandGroup);
         this.shorePlane = islandGroup;
     }
@@ -289,7 +292,7 @@ export class LevelManager {
         
         const numStreaks = 12;
         const iceStartZ = this.waterStartZ;
-        const iceEndZ = this.waterStartZ - CONFIG.WATER.DEPTH;
+        const iceEndZ = this.waterStartZ - this.waterDepth;
         
         for (let i = 0; i < numStreaks; i++) {
             // Random streak dimensions
@@ -301,7 +304,7 @@ export class LevelManager {
             
             // Random position across ice
             const x = (Math.random() - 0.5) * (iceWidth - 2);
-            const z = iceStartZ - Math.random() * CONFIG.WATER.DEPTH;
+            const z = iceStartZ - Math.random() * this.waterDepth;
             
             streak.rotation.x = -Math.PI / 2;
             streak.rotation.z = (Math.random() - 0.5) * 0.3;  // Slight random angle
@@ -343,7 +346,7 @@ export class LevelManager {
         this.bridgeTimer = now;
         
         // Check if reached the shore
-        const shoreZ = this.waterStartZ - CONFIG.WATER.DEPTH;
+        const shoreZ = this.waterStartZ - this.waterDepth;
         if (this.nextBridgeZ <= shoreZ) {
             onBridgeComplete();
             return true;

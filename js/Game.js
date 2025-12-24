@@ -27,6 +27,9 @@ export class Game {
         // Level screen pause (don't scroll while showing level number)
         this.levelScreenVisible = false;
         
+        // Bridge completion state
+        this.bridgeComplete = false;
+        
         // Stats
         this.distanceTraveled = 0;
         this.yarnCollected = 0;
@@ -91,10 +94,11 @@ export class Game {
         
         // Pre-generate the entire level (yarn, triangles)
         const levelEndDistance = this.getLevelEndDistance();
+        const yarnRequired = this.getYarnRequired();
         this.spawner.generateFullLevel(levelEndDistance);
         
         // Create water and island at start (visible in distance)
-        this.levelManager.createWater(levelEndDistance);
+        this.levelManager.createWater(levelEndDistance, yarnRequired);
         
         // Position camera to follow cat
         this.updateCameraPosition(true);
@@ -675,20 +679,30 @@ export class Game {
     }
     
     updateWater() {
-        // Move cat forward slowly onto the bridge
+        // Build bridge using yarn (if not complete yet)
+        if (!this.bridgeComplete) {
+            const done = this.levelManager.buildBridge(this.cat, () => {
+                // Bridge building complete - mark as done but don't end game yet
+                this.bridgeDistance = this.levelManager.getBridgeDistance();
+                this.bridgeComplete = true;
+            });
+        }
+        
+        // Move cat forward across the bridge
         const lastBridgeZ = this.levelManager.getLastBridgeZ();
         
-        // Only move forward if there's bridge to walk on
-        if (this.cat.z > lastBridgeZ + 0.5) {
+        // Always move forward if there's bridge to walk on, or if bridge is complete
+        if (this.cat.z > lastBridgeZ + 0.5 || this.bridgeComplete) {
             this.cat.moveForward(CONFIG.WATER_SPEED);
         }
         
-        // Build bridge using yarn
-        const done = this.levelManager.buildBridge(this.cat, () => {
-            // Bridge building complete
-            this.bridgeDistance = this.levelManager.getBridgeDistance();
-            this.endGame();
-        });
+        // Check if cat has reached the shore/island (victory condition)
+        if (this.bridgeComplete) {
+            const shoreZ = this.levelManager.waterStartZ - this.levelManager.waterDepth;
+            if (this.cat.z <= shoreZ) {
+                this.endGame();
+            }
+        }
         
         // Update ground behind (keep some visible)
         this.updateGround();
@@ -737,7 +751,9 @@ export class Game {
                       (bridge * CONFIG.BRIDGE_POINTS);
         
         // Check if player reached the island (success)
-        const reachedIsland = bridge >= CONFIG.WATER.DEPTH;
+        // Need to build bridge equal to yarn requirement (each yarn = 1 unit of bridge)
+        const yarnRequired = this.getYarnRequired();
+        const reachedIsland = bridge >= yarnRequired;
         
         if (reachedIsland) {
             this.soundManager.playVictory();
@@ -783,7 +799,7 @@ export class Game {
             if (statsEl) {
                 statsEl.innerHTML = `
                     <p>You collected ${yarnHad} yarn</p>
-                    <p>You needed ${Math.ceil(CONFIG.WATER.DEPTH)} to cross</p>
+                    <p>You needed ${yarnNeeded} to cross</p>
                 `;
             }
             
@@ -858,6 +874,7 @@ export class Game {
         this.distanceTraveled = 0;
         this.yarnCollected = 0;
         this.bridgeDistance = 0;
+        this.bridgeComplete = false;
         this.nextRowZ = -10;
         this.isStunned = false;
         this.stunEndTime = 0;
@@ -883,8 +900,9 @@ export class Game {
         
         // Re-generate level and water
         const levelEndDistance = this.getLevelEndDistance();
+        const yarnRequired = this.getYarnRequired();
         this.spawner.generateFullLevel(levelEndDistance);
-        this.levelManager.createWater(levelEndDistance);
+        this.levelManager.createWater(levelEndDistance, yarnRequired);
         
         // Hide UI
         this.hideMessage();
@@ -900,6 +918,7 @@ export class Game {
         this.distanceTraveled = 0;
         this.yarnCollected = 0;
         this.bridgeDistance = 0;
+        this.bridgeComplete = false;
         this.nextRowZ = -10;
         this.isStunned = false;
         this.stunEndTime = 0;
@@ -925,8 +944,9 @@ export class Game {
         
         // Re-generate level and water
         const levelEndDistance = this.getLevelEndDistance();
+        const yarnRequired = this.getYarnRequired();
         this.spawner.generateFullLevel(levelEndDistance);
-        this.levelManager.createWater(levelEndDistance);
+        this.levelManager.createWater(levelEndDistance, yarnRequired);
         
         // Hide UI
         this.hideMessage();
