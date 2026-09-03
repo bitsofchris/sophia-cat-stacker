@@ -182,7 +182,7 @@
   .choice:active { transform: scale(.95); }
   .choice[data-key="b"] { border-color: rgba(255,197,61,.4); }
   .choice[data-key="d"] { border-color: rgba(107,201,255,.4); }
-  .choice .owner-emoji { font-size: clamp(2.8rem, 13vw, 4rem); line-height: 1; }
+  .choice .owner-emoji { font-size: clamp(2.2rem, 10vw, 3.2rem); line-height: 1; }
   .choice .owner-name {
     font-family: 'Press Start 2P', monospace;
     font-size: clamp(.6rem, 2.8vw, .85rem);
@@ -202,12 +202,29 @@
   }
   .choices.locked .choice { pointer-events: none; }
 
-  /* ── LETTER SVG ── */
-  .letter-svg { width: clamp(90px, 26vw, 140px); height: auto; display: block; }
-  .letter-svg .stick { stroke: var(--bee); }
-  .letter-svg .ball  { stroke: var(--dog); }
-  .letter-svg .part { fill: none; stroke-width: 15; stroke-linecap: round; }
-  .stage .letter-svg { width: clamp(120px, 34vw, 190px); }
+  /* ── LETTER SVG — plain black on paper, exactly how a book shows it ── */
+  .letter-svg { width: clamp(64px, 18vw, 96px); height: auto; display: block; }
+  .letter-svg .part { fill: none; stroke: #14121F; stroke-width: 15; stroke-linecap: round; }
+  .letter-tile {
+    background: #FFFDF7;
+    border-radius: 16px;
+    padding: 10px 16px;
+    display: inline-flex;
+    box-shadow: 0 4px 14px rgba(0,0,0,.28);
+  }
+  .stage .letter-svg { width: clamp(96px, 27vw, 150px); }
+  .stage .letter-tile { padding: 16px 26px; border-radius: 22px; }
+
+  /* reveal card shown after a correct answer */
+  .reveal { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .reveal-row { display: flex; align-items: center; gap: clamp(10px, 3vw, 20px); }
+  .reveal-emoji { font-size: clamp(3rem, 15vw, 4.6rem); line-height: 1; }
+  .reveal-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(.7rem, 3.2vw, 1rem);
+    color: var(--good);
+    letter-spacing: 2px;
+  }
 
   /* ── HINT OVERLAY ── */
   .overlay {
@@ -230,7 +247,8 @@
   .hint-line i { color: var(--dog); font-style: normal; }
 
   .draw-wrap { line-height: 0; }
-  .draw-wrap svg { width: clamp(80px, 20vw, 116px); height: auto; }
+  .draw-wrap .letter-tile { padding: 12px 20px; }
+  .draw-wrap svg { width: clamp(70px, 18vw, 104px); height: auto; }
   .draw-wrap .part {
     stroke-dasharray: var(--len);
     stroke-dashoffset: var(--len);
@@ -252,9 +270,11 @@
     font-family: 'Press Start 2P', monospace;
     font-size: clamp(1.2rem, 6vw, 1.9rem);
     letter-spacing: 5px;
+    background: #FFFDF7;
+    color: #14121F;
+    padding: 8px 14px;
+    border-radius: 12px;
   }
-  .bed-word .b { color: var(--bee); }
-  .bed-word .d { color: var(--dog); }
   .bed-cap { font-size: .9rem; color: var(--soft); max-width: 190px; text-align: left; }
 
   /* ── WIN ── */
@@ -299,7 +319,7 @@
   <h1 class="title"><span class="b">BEE</span> or <span class="d">DEE</span></h1>
   <p class="sub">Learn <b>b</b> and <b>d</b> — the fun way</p>
   <button class="big-btn" id="btn-play">▶ PLAY</button>
-  <p class="made-for">Sound on! 🔊 Made for Ethan 💛</p>
+  <p class="made-for">Sound on! 🔊 <span style="opacity:.75">(if it's quiet, turn off silent mode)</span><br>Made for Ethan 💛</p>
 </section>
 
 <!-- ══════ GAME ══════ -->
@@ -347,13 +367,64 @@
    AUDIO — everything is generated, no files
    ════════════════════════════════════════════ */
 let actx = null;
+let audioPrimed = false;
 
+/* iOS routes plain Web Audio through the "ambient" session, which the physical
+   silent switch mutes. Opting into "playback" makes the game audible with the
+   ringer off — the single most common cause of a silent game on an iPad. */
+function setPlaybackSession() {
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = 'playback';
+  } catch (e) { /* not supported — nothing to do */ }
+}
+
+/* MUST run synchronously inside a real user gesture. iOS grants the audio
+   unlock to the gesture itself, so anything deferred by a timer is too late. */
 function initAudio() {
+  setPlaybackSession();
   if (!actx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (AC) actx = new AC();
   }
-  if (actx && actx.state === 'suspended') actx.resume();
+  if (!actx) return;
+  if (actx.state === 'suspended') actx.resume();
+  if (audioPrimed) return;
+  audioPrimed = true;
+
+  // A one-sample silent buffer is what actually unlocks Web Audio on iOS.
+  try {
+    const src = actx.createBufferSource();
+    src.buffer = actx.createBuffer(1, 1, 22050);
+    src.connect(actx.destination);
+    src.start(0);
+  } catch (e) { /* ignore */ }
+
+  // speechSynthesis needs its own unlock, also inside this same gesture.
+  try {
+    if ('speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    }
+  } catch (e) { /* ignore */ }
+}
+
+/* Different mobile browsers grant activation on different events, and
+   preventDefault() on pointerdown can cost us the one we relied on. Listen for
+   all of them; initAudio is idempotent and also re-resumes a context that iOS
+   suspended while the tab was backgrounded. */
+['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'].forEach(function (evt) {
+  document.addEventListener(evt, initAudio, { capture: true, passive: true });
+});
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden && actx && actx.state === 'suspended') actx.resume();
+});
+
+/* Every sound goes through here so a context iOS quietly suspended gets woken. */
+function audioReady() {
+  if (!actx) return false;
+  if (actx.state === 'suspended') actx.resume();
+  return true;
 }
 
 function noiseBuffer(seconds) {
@@ -366,7 +437,7 @@ function noiseBuffer(seconds) {
 
 /* Bee: buzzy sawtooth with a wobble */
 function playBuzz() {
-  if (!actx) return;
+  if (!audioReady()) return;
   const t = actx.currentTime;
   const osc = actx.createOscillator();
   const lfo = actx.createOscillator();
@@ -396,7 +467,7 @@ function playBuzz() {
 
 /* Dog: two filtered noise barks */
 function playBark() {
-  if (!actx) return;
+  if (!audioReady()) return;
   [0, 0.22].forEach((offset, i) => {
     const t = actx.currentTime + offset;
     const src = actx.createBufferSource();
@@ -429,18 +500,18 @@ function tone(freq, start, dur, type, vol) {
 }
 
 function playCorrect() {
-  if (!actx) return;
+  if (!audioReady()) return;
   [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.075, 0.28, 'triangle', 0.18));
 }
 
 function playWrong() {
-  if (!actx) return;
+  if (!audioReady()) return;
   tone(233.08, 0, 0.2, 'sine', 0.18);
   tone(174.61, 0.14, 0.3, 'sine', 0.16);
 }
 
 function playFanfare() {
-  if (!actx) return;
+  if (!audioReady()) return;
   const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5];
   notes.forEach((f, i) => tone(f, i * 0.14, 0.4, 'triangle', 0.2));
 }
@@ -449,14 +520,23 @@ function playFanfare() {
 function speak(text, rate, pitch) {
   try {
     if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    setTimeout(function () {
+    const synth = window.speechSynthesis;
+    const say = function () {
       const u = new SpeechSynthesisUtterance(text);
       u.rate = rate == null ? 0.82 : rate;
       u.pitch = pitch == null ? 1.2 : pitch;
       u.volume = 1;
-      window.speechSynthesis.speak(u);
-    }, 70);
+      synth.speak(u);
+    };
+    // Only defer when we actually have to interrupt something — Chrome drops an
+    // utterance spoken in the same tick as cancel(), but iOS needs the common
+    // idle path to stay synchronous.
+    if (synth.speaking || synth.pending) {
+      synth.cancel();
+      setTimeout(say, 60);
+    } else {
+      say();
+    }
   } catch (e) { /* speech is a bonus, never a blocker */ }
 }
 
@@ -483,12 +563,23 @@ function letterSVG(letter, animated) {
   '</svg>';
 }
 
+/* Letters always appear as black-on-paper, the way they look in a book. */
+function letterTile(letter, animated) {
+  return '<span class="letter-tile">' + letterSVG(letter, animated) + '</span>';
+}
+
+/* Say the sound AND the letter name AND the animal — every round. */
+function speakLetter(letter, tail) {
+  const o = OWNER[letter];
+  speak(o.sound + '. ' + letter + ' for ' + o.word + '. ' + (tail || ''), 0.78);
+}
+
 /* ════════════════════════════════════════════
    CONTENT
    ════════════════════════════════════════════ */
 const OWNER = {
-  b: { emoji: '🐝', name: 'BEE', sound: 'buh', play: playBuzz },
-  d: { emoji: '🐶', name: 'DOG', sound: 'duh', play: playBark }
+  b: { emoji: '🐝', name: 'BEE', word: 'bee', sound: 'buh', play: playBuzz },
+  d: { emoji: '🐶', name: 'DOG', word: 'dog', sound: 'duh', play: playBark }
 };
 
 const WORDS = {
@@ -601,13 +692,11 @@ function renderQuestion(replay) {
       e.preventDefault();
       playPrompt();
     });
-    choices.innerHTML = shuffle(['b', 'd']).map(function (k) {
-      return '<button class="choice" data-key="' + k + '">' + letterSVG(k, false) + '</button>';
-    }).join('');
+    choices.innerHTML = shuffle(['b', 'd']).map(letterChoiceHTML).join('');
     setTimeout(playPrompt, replay ? 200 : 450);
 
   } else if (round.id === 'look') {
-    stage.innerHTML = letterSVG(q.answer, false);
+    stage.innerHTML = letterTile(q.answer, false);
     choices.innerHTML = shuffle(['b', 'd']).map(function (k) {
       return '<button class="choice" data-key="' + k + '">' +
         '<span class="owner-emoji">' + OWNER[k].emoji + '</span>' +
@@ -622,9 +711,7 @@ function renderQuestion(replay) {
         '<div class="word-emoji">' + q.item.emoji + '</div>' +
         '<div class="word-text"><span class="blank">_</span>' + rest + '</div>' +
       '</div>';
-    choices.innerHTML = shuffle(['b', 'd']).map(function (k) {
-      return '<button class="choice" data-key="' + k + '">' + letterSVG(k, false) + '</button>';
-    }).join('');
+    choices.innerHTML = shuffle(['b', 'd']).map(letterChoiceHTML).join('');
     setTimeout(function () { speak(q.item.word, 0.7); }, 300);
   }
 
@@ -634,6 +721,29 @@ function renderQuestion(replay) {
       answer(btn, btn.dataset.key);
     });
   });
+}
+
+function showReveal(letter) {
+  const o = OWNER[letter];
+  const stage = el('stage');
+  stage.classList.remove('pop');
+  void stage.offsetWidth;
+  stage.classList.add('pop');
+  stage.innerHTML =
+    '<div class="reveal">' +
+      '<div class="reveal-row">' + letterTile(letter, false) +
+        '<span class="reveal-emoji">' + o.emoji + '</span>' +
+      '</div>' +
+      '<div class="reveal-name">' + letter + '  =  ' + o.name + '</div>' +
+    '</div>';
+}
+
+function letterChoiceHTML(k) {
+  return '<button class="choice" data-key="' + k + '">' +
+    letterTile(k, false) +
+    '<span class="owner-emoji">' + OWNER[k].emoji + '</span>' +
+    '<span class="owner-name">' + OWNER[k].name + '</span>' +
+  '</button>';
 }
 
 function playPrompt() {
@@ -658,11 +768,15 @@ function answer(btn, key) {
     if (!state.missedThis) state.firstTry++;
     state.results[state.roundIdx * PER_ROUND + state.qIdx] = state.missedThis ? 'miss' : 'win';
     renderStars();
+    showReveal(q.answer);
+    // Confirm every answer the same way: the animal, the letter, and both
+    // the sound and the letter's name.
+    setTimeout(function () { OWNER[q.answer].play(); }, 450);
     setTimeout(function () {
-      speak(PRAISE[Math.floor(Math.random() * PRAISE.length)], 1, 1.3);
-    }, 380);
+      speakLetter(q.answer, PRAISE[Math.floor(Math.random() * PRAISE.length)]);
+    }, 1050);
     if (state.streak > 0 && state.streak % 3 === 0) burstConfetti(60);
-    setTimeout(nextQuestion, 1250);
+    setTimeout(nextQuestion, 3400);
   } else {
     btn.classList.add('wrong');
     playWrong();
@@ -705,15 +819,15 @@ function announceRound() {
 function showHint(letter) {
   const isB = letter === 'b';
   el('hint-head').textContent = 'This one is  ' + letter;
-  el('hint-draw').innerHTML = letterSVG(letter, true);
+  el('hint-draw').innerHTML = letterTile(letter, true);
   el('hint-order').textContent = isB ? '1 STICK  →  2 BALL' : '1 BALL  →  2 STICK';
   el('hint-line').innerHTML = isB
     ? 'For <b>b</b> the <b>stick</b> comes first, then the ball.<br><b>b</b> is for 🐝 <b>bee</b> — it says <b>“buh”</b>.'
     : 'For <i>d</i> the <i>ball</i> comes first, then the stick.<br><i>d</i> is for 🐶 <i>dog</i> — it says <i>“duh”</i>.';
   el('overlay-hint').classList.add('on');
   setTimeout(function () {
-    speak(isB ? 'This is b. Stick first, then the ball. b says buh.'
-              : 'This is d. Ball first, then the stick. d says duh.', 0.78);
+    speak(isB ? 'This is b. Stick first, then the ball. buh. b for bee.'
+              : 'This is d. Ball first, then the stick. duh. d for dog.', 0.78);
   }, 350);
 }
 
