@@ -4,7 +4,7 @@ Authoritative guide for any agent working in this repo. Read this before touchin
 
 ## What this is
 
-A static browser-game arcade for Chris's kids, live at **https://sophiaethan.com**.
+A static browser-game arcade for Chris's kids, live at **http://sophiaethan.com** (HTTP-only — see Deploy).
 Each game is a folder at the repo root with an `index.html`. The root `index.html`
 is the arcade home page that links to them.
 
@@ -49,11 +49,17 @@ Verify it actually went out:
 gh api repos/bitsofchris/vibecoded-games-with-my-kids/pages/builds/latest
 
 # then confirm the live URL serves the new game
-curl -sI https://sophiaethan.com/<game-slug>/ | head -1   # expect 200
+curl -sI http://sophiaethan.com/<game-slug>/ | head -1   # expect 200
 ```
 
-Note: the site is served over HTTPS but `https_enforced` is false, so `http://`
-also works. Always give Chris the `https://sophiaethan.com/<slug>/` link.
+**The site is HTTP-only right now.** GitHub Pages never provisioned a TLS
+certificate for `sophiaethan.com` (`pages/health` reports
+`https_error: peer_failed_verification`, `https_certificate: null`), so
+`https://sophiaethan.com/...` fails to connect. DNS is correct — the four
+`185.199.10x.153` A records are in place — so the fix is to re-trigger
+provisioning in repo Settings → Pages (remove and re-add the custom domain,
+then tick "Enforce HTTPS"). Until that is done, hand Chris the `http://` link;
+a `https://` link looks broken to him.
 
 ## Test locally before you push
 
@@ -117,6 +123,6 @@ Chris sends a game idea from his vault. The agent should:
 2. Play-test with Playwright, desktop **and** phone viewport.
 3. Add the home-page tile.
 4. Commit and push to `main`.
-5. Verify live, and report back the `https://sophiaethan.com/<slug>/` link.
+5. Verify live, and report back the `http://sophiaethan.com/<slug>/` link.
 
 `/new-game` in `.claude/commands/` is the slash-command version of this.
