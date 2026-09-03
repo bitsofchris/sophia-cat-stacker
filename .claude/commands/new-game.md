@@ -101,3 +101,37 @@ After the game is complete, add a game card to `index.html` inside the `<main cl
 - Confirm the home page tile links to the correct path
 - Confirm the home button is present per Step 2
 - Confirm touch controls are implemented per Step 3
+
+### Step 6: Play-test with Playwright (required — do not skip)
+
+```bash
+cd /Users/chris/repos/vibecoded-games-with-my-kids && python3 -m http.server 8123
+```
+
+Then via the Playwright MCP tools (pre-approved in `.claude/settings.local.json`):
+
+1. `browser_navigate` → `http://localhost:8123/<slug>/`
+2. `browser_console_messages` → **zero errors** is the bar
+3. Click/keypress through a real round of play
+4. `browser_take_screenshot` at start, mid-game, and the win state
+5. `browser_resize` to `390 x 844` and play again with **clicks only** (no keyboard)
+
+Kill the server when done.
+
+### Step 7: Deploy
+
+Pushing to `main` IS the deploy — GitHub Pages serves the repo root at
+https://sophiaethan.com. No build step, no workflow.
+
+```bash
+git add -A && git commit -m "Add <Game Title>" && git push origin main
+gh api repos/bitsofchris/vibecoded-games-with-my-kids/pages/builds/latest   # expect "status": "built"
+curl -sI https://sophiaethan.com/<slug>/ | head -1                          # expect 200
+```
+
+Report back the live `https://sophiaethan.com/<slug>/` link.
+
+---
+
+**Full repo rules — stack, deploy, testing, mobile requirements — live in
+`AGENTS.md` at the repo root. Read it before starting.**

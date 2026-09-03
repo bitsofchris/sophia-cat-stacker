@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🐝 Bee or Dee!</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap');
+
+  :root {
+    --bee: #FFC53D;
+    --dog: #6BC9FF;
+    --bg: #12102A;
+    --bg2: #1E1A44;
+    --ink: #FFF7E8;
+    --good: #39FF14;
+    --soft: #A79FD6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    background: radial-gradient(circle at 20% 10%, #2A2260 0%, var(--bg) 55%),
+                radial-gradient(circle at 85% 90%, #3A2065 0%, transparent 60%);
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: 'Outfit', system-ui, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* ── SCREENS ── */
+  .screen {
+    position: fixed; inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    text-align: center;
+  }
+  .screen.on { display: flex; }
+
+  /* ── START ── */
+  .title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1.4rem, 7vw, 2.6rem);
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .title .b { color: var(--bee); text-shadow: 0 0 22px rgba(255,197,61,.55); }
+  .title .d { color: var(--dog); text-shadow: 0 0 22px rgba(107,201,255,.55); }
+  .sub {
+    color: var(--soft);
+    font-size: clamp(.95rem, 3.6vw, 1.25rem);
+    margin-bottom: 26px;
+    letter-spacing: 1px;
+  }
+  .mascots { font-size: clamp(3rem, 16vw, 5.5rem); margin-bottom: 18px; letter-spacing: 18px; }
+  .mascots span { display: inline-block; animation: bob 2.2s ease-in-out infinite; }
+  .mascots span:nth-child(2) { animation-delay: .5s; }
+  @keyframes bob { 0%,100% { transform: translateY(0) rotate(-4deg);} 50% { transform: translateY(-14px) rotate(4deg);} }
+
+  .big-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1rem, 4.5vw, 1.5rem);
+    padding: 22px 44px;
+    min-height: 64px;
+    border: none;
+    border-radius: 22px;
+    background: linear-gradient(135deg, var(--bee), #FF8A3D);
+    color: #2A1800;
+    cursor: pointer;
+    box-shadow: 0 8px 0 #B87400, 0 14px 34px rgba(255,138,61,.35);
+    transition: transform .08s, box-shadow .08s;
+    touch-action: manipulation;
+  }
+  .big-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #B87400, 0 6px 18px rgba(255,138,61,.3); }
+  .made-for { margin-top: 26px; color: var(--soft); font-size: .95rem; }
+
+  /* ── GAME HUD ── */
+  .hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    padding: 14px 66px 8px 66px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+  }
+  .round-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(.55rem, 2.6vw, .8rem);
+    color: var(--soft);
+    letter-spacing: 1px;
+  }
+  .stars {
+    display: grid;
+    grid-template-columns: repeat(9, 13px);
+    gap: 6px 5px;
+    justify-content: center;
+  }
+  .star {
+    width: 13px; height: 13px; border-radius: 50%;
+    background: rgba(255,255,255,.13);
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), background .3s;
+  }
+  .star.win { background: var(--good); box-shadow: 0 0 10px var(--good); transform: scale(1.35); }
+  .star.miss { background: #6E5A9E; }
+
+  /* ── PLAY AREA ── */
+  .play {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: clamp(14px, 3.5vh, 30px);
+    width: 100%; max-width: 640px;
+    margin-top: 46px;
+  }
+  .ask {
+    font-size: clamp(1.05rem, 4.6vw, 1.6rem);
+    font-weight: 600;
+    color: var(--ink);
+    min-height: 1.4em;
+  }
+
+  /* prompt stage */
+  .stage {
+    display: flex; align-items: center; justify-content: center;
+    min-height: clamp(140px, 26vh, 210px);
+    width: 100%;
+  }
+  .stage.pop { animation: pop .45s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes pop { 0% { transform: scale(.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+  .speaker-btn {
+    display: flex; align-items: center; gap: 12px;
+    font-size: clamp(2.6rem, 12vw, 4.2rem);
+    background: rgba(255,255,255,.07);
+    border: 2px solid rgba(255,255,255,.16);
+    color: var(--ink);
+    border-radius: 28px;
+    padding: 18px 34px;
+    min-height: 64px;
+    cursor: pointer;
+    font-family: 'Outfit', sans-serif;
+    touch-action: manipulation;
+  }
+  .speaker-btn:active { transform: scale(.96); }
+  .speaker-btn .again { font-size: 1rem; color: var(--soft); font-weight: 600; }
+
+  .word-card { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .word-emoji { font-size: clamp(3.6rem, 18vw, 6rem); line-height: 1; }
+  .word-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1.6rem, 8vw, 2.6rem);
+    letter-spacing: 6px;
+  }
+  .word-text .blank { color: var(--bee); opacity: .55; }
+
+  /* ── CHOICES ── */
+  .choices {
+    display: flex; gap: clamp(14px, 4vw, 28px);
+    width: 100%; justify-content: center;
+    padding: 0 8px;
+  }
+  .choice {
+    flex: 1 1 0; max-width: 230px;
+    min-height: 130px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    background: rgba(255,255,255,.06);
+    border: 3px solid rgba(255,255,255,.14);
+    border-radius: 26px;
+    padding: 14px 8px;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    transition: transform .1s, border-color .2s, background .2s;
+    touch-action: manipulation;
+  }
+  .choice:active { transform: scale(.95); }
+  .choice[data-key="b"] { border-color: rgba(255,197,61,.4); }
+  .choice[data-key="d"] { border-color: rgba(107,201,255,.4); }
+  .choice .owner-emoji { font-size: clamp(2.8rem, 13vw, 4rem); line-height: 1; }
+  .choice .owner-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(.6rem, 2.8vw, .85rem);
+    letter-spacing: 1px;
+  }
+  .choice.correct {
+    background: rgba(57,255,20,.16);
+    border-color: var(--good);
+    animation: cheer .5s ease;
+  }
+  @keyframes cheer { 0%,100% { transform: scale(1);} 40% { transform: scale(1.12);} }
+  .choice.wrong { animation: shake .45s; border-color: #FF5C7A; background: rgba(255,92,122,.12); }
+  @keyframes shake {
+    0%,100% { transform: translateX(0);}
+    20% { transform: translateX(-11px);} 40% { transform: translateX(11px);}
+    60% { transform: translateX(-7px);} 80% { transform: translateX(7px);}
+  }
+  .choices.locked .choice { pointer-events: none; }
+
+  /* ── LETTER SVG ── */
+  .letter-svg { width: clamp(90px, 26vw, 140px); height: auto; display: block; }
+  .letter-svg .stick { stroke: var(--bee); }
+  .letter-svg .ball  { stroke: var(--dog); }
+  .letter-svg .part { fill: none; stroke-width: 15; stroke-linecap: round; }
+  .stage .letter-svg { width: clamp(120px, 34vw, 190px); }
+
+  /* ── HINT OVERLAY ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: #0B0920;
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: clamp(8px, 1.8vh, 16px); padding: 18px; text-align: center;
+    z-index: 500;
+    overflow-y: auto;
+  }
+  .overlay.on { display: flex; }
+  .overlay > * { flex-shrink: 0; }
+  .hint-head {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(.85rem, 4.2vw, 1.3rem);
+  }
+  .hint-line { font-size: clamp(1rem, 4.4vw, 1.35rem); color: var(--ink); max-width: 460px; }
+  .hint-line b { color: var(--bee); }
+  .hint-line i { color: var(--dog); font-style: normal; }
+
+  .draw-wrap { line-height: 0; }
+  .draw-wrap svg { width: clamp(80px, 20vw, 116px); height: auto; }
+  .draw-wrap .part {
+    stroke-dasharray: var(--len);
+    stroke-dashoffset: var(--len);
+    animation: draw .8s ease forwards;
+  }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  .order-badge {
+    font-family: 'Press Start 2P', monospace;
+    font-size: .7rem; color: var(--soft); letter-spacing: 1px;
+  }
+
+  .bed-hint {
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(255,255,255,.06);
+    border: 2px solid rgba(255,255,255,.13);
+    border-radius: 20px; padding: 12px 22px;
+  }
+  .bed-word {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1.2rem, 6vw, 1.9rem);
+    letter-spacing: 5px;
+  }
+  .bed-word .b { color: var(--bee); }
+  .bed-word .d { color: var(--dog); }
+  .bed-cap { font-size: .9rem; color: var(--soft); max-width: 190px; text-align: left; }
+
+  /* ── WIN ── */
+  .trophy { font-size: clamp(4.5rem, 22vw, 8rem); animation: bob 2s ease-in-out infinite; }
+  .win-score {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(1rem, 5vw, 1.6rem);
+    color: var(--bee);
+    line-height: 1.6;
+  }
+  .win-sub { color: var(--soft); font-size: 1.05rem; max-width: 380px; margin-bottom: 8px; }
+  .btn-row { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .ghost-btn {
+    font-family: 'Outfit', sans-serif; font-weight: 600;
+    font-size: 1.05rem; padding: 16px 28px; min-height: 52px;
+    border-radius: 18px; cursor: pointer;
+    background: rgba(255,255,255,.08);
+    border: 2px solid rgba(255,255,255,.2);
+    color: var(--ink);
+    touch-action: manipulation;
+  }
+  .ghost-btn:active { transform: scale(.96); }
+
+  #confetti { position: fixed; inset: 0; pointer-events: none; z-index: 900; }
+
+  @media (max-height: 620px) {
+    .play { gap: 10px; margin-top: 40px; }
+    .stage { min-height: 110px; }
+    .choice { min-height: 100px; }
+  }
+</style>
+</head>
+<body>
+
+<a href="../" style="position:fixed;top:12px;left:12px;z-index:1000;text-decoration:none;font-size:28px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;touch-action:manipulation;" aria-label="Back to Arcade">🏠</a>
+
+<canvas id="confetti"></canvas>
+
+<!-- ══════ START ══════ -->
+<section class="screen on" id="screen-start">
+  <div class="mascots"><span>🐝</span><span>🐶</span></div>
+  <h1 class="title"><span class="b">BEE</span> or <span class="d">DEE</span></h1>
+  <p class="sub">Learn <b>b</b> and <b>d</b> — the fun way</p>
+  <button class="big-btn" id="btn-play">▶ PLAY</button>
+  <p class="made-for">Sound on! 🔊 Made for Ethan 💛</p>
+</section>
+
+<!-- ══════ GAME ══════ -->
+<section class="screen" id="screen-game">
+  <div class="hud">
+    <div class="round-label" id="round-label">ROUND 1 · LISTEN</div>
+    <div class="stars" id="stars"></div>
+  </div>
+
+  <div class="play">
+    <div class="ask" id="ask"></div>
+    <div class="stage" id="stage"></div>
+    <div class="choices" id="choices"></div>
+  </div>
+</section>
+
+<!-- ══════ HINT ══════ -->
+<div class="overlay" id="overlay-hint">
+  <div class="hint-head" id="hint-head"></div>
+  <div class="draw-wrap" id="hint-draw"></div>
+  <div class="order-badge" id="hint-order"></div>
+  <div class="hint-line" id="hint-line"></div>
+  <div class="bed-hint">
+    <span class="bed-word"><span class="b">b</span>e<span class="d">d</span></span>
+    <span class="bed-cap">A <b>bed</b> has <b style="color:var(--bee)">b</b> at the head and <b style="color:var(--dog)">d</b> at the feet 🛏️</span>
+  </div>
+  <button class="big-btn" id="btn-retry">TRY AGAIN</button>
+</div>
+
+<!-- ══════ WIN ══════ -->
+<section class="screen" id="screen-win">
+  <div class="trophy">🏆</div>
+  <div class="win-score" id="win-score"></div>
+  <p class="win-sub" id="win-sub"></p>
+  <div class="btn-row">
+    <button class="big-btn" id="btn-again">PLAY AGAIN</button>
+    <a class="ghost-btn" href="../" style="text-decoration:none;display:flex;align-items:center;">🏠 Arcade</a>
+  </div>
+</section>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════
+   AUDIO — everything is generated, no files
+   ════════════════════════════════════════════ */
+let actx = null;
+
+function initAudio() {
+  if (!actx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) actx = new AC();
+  }
+  if (actx && actx.state === 'suspended') actx.resume();
+}
+
+function noiseBuffer(seconds) {
+  const len = Math.floor(actx.sampleRate * seconds);
+  const buf = actx.createBuffer(1, len, actx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  return buf;
+}
+
+/* Bee: buzzy sawtooth with a wobble */
+function playBuzz() {
+  if (!actx) return;
+  const t = actx.currentTime;
+  const osc = actx.createOscillator();
+  const lfo = actx.createOscillator();
+  const lfoGain = actx.createGain();
+  const filter = actx.createBiquadFilter();
+  const gain = actx.createGain();
+
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(190, t);
+  lfo.type = 'sine';
+  lfo.frequency.setValueAtTime(24, t);
+  lfoGain.gain.setValueAtTime(55, t);
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(950, t);
+
+  lfo.connect(lfoGain).connect(osc.frequency);
+  osc.connect(filter).connect(gain).connect(actx.destination);
+
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.22, t + 0.06);
+  gain.gain.setValueAtTime(0.22, t + 0.55);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+
+  osc.start(t); lfo.start(t);
+  osc.stop(t + 0.9); lfo.stop(t + 0.9);
+}
+
+/* Dog: two filtered noise barks */
+function playBark() {
+  if (!actx) return;
+  [0, 0.22].forEach((offset, i) => {
+    const t = actx.currentTime + offset;
+    const src = actx.createBufferSource();
+    src.buffer = noiseBuffer(0.2);
+    const filter = actx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 3.2;
+    filter.frequency.setValueAtTime(i === 0 ? 780 : 640, t);
+    filter.frequency.exponentialRampToValueAtTime(240, t + 0.16);
+    const gain = actx.createGain();
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.32, t + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    src.connect(filter).connect(gain).connect(actx.destination);
+    src.start(t); src.stop(t + 0.2);
+  });
+}
+
+function tone(freq, start, dur, type, vol) {
+  const t = actx.currentTime + start;
+  const osc = actx.createOscillator();
+  const gain = actx.createGain();
+  osc.type = type || 'triangle';
+  osc.frequency.setValueAtTime(freq, t);
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(vol == null ? 0.2 : vol, t + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  osc.connect(gain).connect(actx.destination);
+  osc.start(t); osc.stop(t + dur + 0.05);
+}
+
+function playCorrect() {
+  if (!actx) return;
+  [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.075, 0.28, 'triangle', 0.18));
+}
+
+function playWrong() {
+  if (!actx) return;
+  tone(233.08, 0, 0.2, 'sine', 0.18);
+  tone(174.61, 0.14, 0.3, 'sine', 0.16);
+}
+
+function playFanfare() {
+  if (!actx) return;
+  const notes = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5, 1318.5];
+  notes.forEach((f, i) => tone(f, i * 0.14, 0.4, 'triangle', 0.2));
+}
+
+/* Speech — the phonics sound, not the letter name */
+function speak(text, rate, pitch) {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    setTimeout(function () {
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = rate == null ? 0.82 : rate;
+      u.pitch = pitch == null ? 1.2 : pitch;
+      u.volume = 1;
+      window.speechSynthesis.speak(u);
+    }, 70);
+  } catch (e) { /* speech is a bonus, never a blocker */ }
+}
+
+/* ════════════════════════════════════════════
+   LETTER SHAPES — b is stick-then-ball,
+   d is ball-then-stick (left to right)
+   ════════════════════════════════════════════ */
+const LINE_LEN = 124;
+const BALL_LEN = 208;
+
+function letterSVG(letter, animated) {
+  const isB = letter === 'b';
+  const stickX = isB ? 26 : 74;
+  const ballCX = isB ? 60 : 40;
+  // b draws the stick first; d draws the ball first
+  const stickDelay = isB ? 0.15 : 1.0;
+  const ballDelay = isB ? 1.0 : 0.15;
+  const anim = function (delay, len) {
+    return animated ? ' style="--len:' + len + ';animation-delay:' + delay + 's"' : '';
+  };
+  return '<svg class="letter-svg" viewBox="0 0 100 140" aria-label="letter ' + letter + '">' +
+    '<line class="part stick" x1="' + stickX + '" y1="8" x2="' + stickX + '" y2="132"' + anim(stickDelay, LINE_LEN) + '/>' +
+    '<circle class="part ball" cx="' + ballCX + '" cy="99" r="33"' + anim(ballDelay, BALL_LEN) + '/>' +
+  '</svg>';
+}
+
+/* ════════════════════════════════════════════
+   CONTENT
+   ════════════════════════════════════════════ */
+const OWNER = {
+  b: { emoji: '🐝', name: 'BEE', sound: 'buh', play: playBuzz },
+  d: { emoji: '🐶', name: 'DOG', sound: 'duh', play: playBark }
+};
+
+const WORDS = {
+  b: [
+    { word: 'bed', emoji: '🛏️' }, { word: 'bat', emoji: '🦇' },
+    { word: 'bug', emoji: '🐛' }, { word: 'ball', emoji: '⚽' },
+    { word: 'bike', emoji: '🚲' }, { word: 'banana', emoji: '🍌' },
+    { word: 'bus', emoji: '🚌' }, { word: 'book', emoji: '📖' }
+  ],
+  d: [
+    { word: 'dog', emoji: '🐶' }, { word: 'duck', emoji: '🦆' },
+    { word: 'donut', emoji: '🍩' }, { word: 'door', emoji: '🚪' },
+    { word: 'dino', emoji: '🦕' }, { word: 'drum', emoji: '🥁' },
+    { word: 'dad', emoji: '👨' }, { word: 'deer', emoji: '🦌' }
+  ]
+};
+
+const ROUNDS = [
+  { id: 'listen', label: 'ROUND 1 · LISTEN', ask: 'Which letter makes that sound?' },
+  { id: 'look',   label: 'ROUND 2 · LOOK',   ask: 'Whose letter is this?' },
+  { id: 'word',   label: 'ROUND 3 · WORDS',  ask: 'Which letter starts the word?' }
+];
+
+const PER_ROUND = 6;
+const TOTAL = ROUNDS.length * PER_ROUND;
+
+const PRAISE = ['Yes!', 'Great job!', 'You got it!', 'Nice one!', 'Awesome!', 'Perfect!'];
+
+/* ════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════ */
+const state = {
+  roundIdx: 0,
+  qIdx: 0,
+  questions: [],
+  firstTry: 0,
+  results: [],      // 'win' | 'miss' per completed question
+  missedThis: false,
+  streak: 0,
+  busy: false
+};
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function buildRound(roundIdx) {
+  // Always 3 b's and 3 d's so neither letter dominates
+  const answers = shuffle(['b', 'b', 'b', 'd', 'd', 'd']);
+  const pools = { b: shuffle(WORDS.b), d: shuffle(WORDS.d) };
+  const used = { b: 0, d: 0 };
+  return answers.map(function (ans) {
+    const q = { answer: ans };
+    if (ROUNDS[roundIdx].id === 'word') {
+      q.item = pools[ans][used[ans]++ % pools[ans].length];
+    }
+    return q;
+  });
+}
+
+/* ════════════════════════════════════════════
+   RENDER
+   ════════════════════════════════════════════ */
+const el = function (id) { return document.getElementById(id); };
+
+function showScreen(id) {
+  ['screen-start', 'screen-game', 'screen-win'].forEach(function (s) {
+    el(s).classList.toggle('on', s === id);
+  });
+}
+
+function renderStars() {
+  const stars = el('stars');
+  stars.innerHTML = '';
+  for (let i = 0; i < TOTAL; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'star' + (state.results[i] ? ' ' + state.results[i] : '');
+    stars.appendChild(dot);
+  }
+}
+
+function currentQuestion() { return state.questions[state.qIdx]; }
+
+function renderQuestion(replay) {
+  const round = ROUNDS[state.roundIdx];
+  const q = currentQuestion();
+  state.busy = false;
+
+  el('round-label').textContent = round.label;
+  el('ask').textContent = round.ask;
+  renderStars();
+
+  const stage = el('stage');
+  const choices = el('choices');
+  choices.className = 'choices';
+  stage.className = 'stage';
+  // restart the pop animation
+  void stage.offsetWidth;
+  stage.classList.add('pop');
+
+  if (round.id === 'listen') {
+    stage.innerHTML =
+      '<button class="speaker-btn" id="btn-hear">🔊<span class="again">hear<br>again</span></button>';
+    el('btn-hear').addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      playPrompt();
+    });
+    choices.innerHTML = shuffle(['b', 'd']).map(function (k) {
+      return '<button class="choice" data-key="' + k + '">' + letterSVG(k, false) + '</button>';
+    }).join('');
+    setTimeout(playPrompt, replay ? 200 : 450);
+
+  } else if (round.id === 'look') {
+    stage.innerHTML = letterSVG(q.answer, false);
+    choices.innerHTML = shuffle(['b', 'd']).map(function (k) {
+      return '<button class="choice" data-key="' + k + '">' +
+        '<span class="owner-emoji">' + OWNER[k].emoji + '</span>' +
+        '<span class="owner-name">' + OWNER[k].name + '</span></button>';
+    }).join('');
+    setTimeout(function () { speak('Whose letter is this?'); }, 300);
+
+  } else {
+    const rest = q.item.word.slice(1);
+    stage.innerHTML =
+      '<div class="word-card">' +
+        '<div class="word-emoji">' + q.item.emoji + '</div>' +
+        '<div class="word-text"><span class="blank">_</span>' + rest + '</div>' +
+      '</div>';
+    choices.innerHTML = shuffle(['b', 'd']).map(function (k) {
+      return '<button class="choice" data-key="' + k + '">' + letterSVG(k, false) + '</button>';
+    }).join('');
+    setTimeout(function () { speak(q.item.word, 0.7); }, 300);
+  }
+
+  Array.prototype.forEach.call(choices.querySelectorAll('.choice'), function (btn) {
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      answer(btn, btn.dataset.key);
+    });
+  });
+}
+
+function playPrompt() {
+  const q = currentQuestion();
+  OWNER[q.answer].play();
+  setTimeout(function () { speak(OWNER[q.answer].sound, 0.7, 1.1); }, 700);
+}
+
+/* ════════════════════════════════════════════
+   ANSWER HANDLING
+   ════════════════════════════════════════════ */
+function answer(btn, key) {
+  if (state.busy) return;
+  const q = currentQuestion();
+  state.busy = true;
+  el('choices').classList.add('locked');
+
+  if (key === q.answer) {
+    btn.classList.add('correct');
+    playCorrect();
+    state.streak++;
+    if (!state.missedThis) state.firstTry++;
+    state.results[state.roundIdx * PER_ROUND + state.qIdx] = state.missedThis ? 'miss' : 'win';
+    renderStars();
+    setTimeout(function () {
+      speak(PRAISE[Math.floor(Math.random() * PRAISE.length)], 1, 1.3);
+    }, 380);
+    if (state.streak > 0 && state.streak % 3 === 0) burstConfetti(60);
+    setTimeout(nextQuestion, 1250);
+  } else {
+    btn.classList.add('wrong');
+    playWrong();
+    state.streak = 0;
+    state.missedThis = true;
+    setTimeout(function () { showHint(q.answer); }, 500);
+  }
+}
+
+function nextQuestion() {
+  state.missedThis = false;
+  state.qIdx++;
+  if (state.qIdx >= state.questions.length) {
+    state.roundIdx++;
+    if (state.roundIdx >= ROUNDS.length) { win(); return; }
+    state.qIdx = 0;
+    state.questions = buildRound(state.roundIdx);
+    announceRound();
+    return;
+  }
+  renderQuestion(false);
+}
+
+function announceRound() {
+  const round = ROUNDS[state.roundIdx];
+  el('round-label').textContent = round.label;
+  el('ask').textContent = round.id === 'look' ? 'New game! Look at the letter.' : 'New game! Listen for the word.';
+  el('stage').innerHTML = '<div style="font-size:clamp(3rem,16vw,5rem)">' +
+    (round.id === 'look' ? '👀' : '📖') + '</div>';
+  el('choices').innerHTML = '';
+  playFanfare();
+  speak(round.id === 'look' ? 'New game. Look at the letter.' : 'New game. Finish the word.', 0.9);
+  burstConfetti(50);
+  setTimeout(function () { renderQuestion(false); }, 2200);
+}
+
+/* ════════════════════════════════════════════
+   HINT
+   ════════════════════════════════════════════ */
+function showHint(letter) {
+  const isB = letter === 'b';
+  el('hint-head').textContent = 'This one is  ' + letter;
+  el('hint-draw').innerHTML = letterSVG(letter, true);
+  el('hint-order').textContent = isB ? '1 STICK  →  2 BALL' : '1 BALL  →  2 STICK';
+  el('hint-line').innerHTML = isB
+    ? 'For <b>b</b> the <b>stick</b> comes first, then the ball.<br><b>b</b> is for 🐝 <b>bee</b> — it says <b>“buh”</b>.'
+    : 'For <i>d</i> the <i>ball</i> comes first, then the stick.<br><i>d</i> is for 🐶 <i>dog</i> — it says <i>“duh”</i>.';
+  el('overlay-hint').classList.add('on');
+  setTimeout(function () {
+    speak(isB ? 'This is b. Stick first, then the ball. b says buh.'
+              : 'This is d. Ball first, then the stick. d says duh.', 0.78);
+  }, 350);
+}
+
+function hideHint() {
+  el('overlay-hint').classList.remove('on');
+  renderQuestion(true);
+}
+
+/* ════════════════════════════════════════════
+   WIN
+   ════════════════════════════════════════════ */
+function win() {
+  showScreen('screen-win');
+  el('win-score').innerHTML = state.firstTry + ' / ' + TOTAL + '<br>FIRST TRY';
+  el('win-sub').textContent = state.firstTry === TOTAL
+    ? 'PERFECT! You know every b and every d. 🌟'
+    : 'Great work — every b and d you missed, you figured out. That is how you learn!';
+  playFanfare();
+  burstConfetti(220);
+  setTimeout(function () { speak('Amazing job! You did it!', 0.9, 1.3); }, 400);
+}
+
+/* ════════════════════════════════════════════
+   CONFETTI
+   ════════════════════════════════════════════ */
+const cvs = el('confetti');
+const ctx = cvs.getContext('2d');
+let bits = [];
+const COLORS = ['#FFC53D', '#6BC9FF', '#39FF14', '#FF6BD6', '#FFF7E8'];
+
+function sizeCanvas() {
+  cvs.width = window.innerWidth;
+  cvs.height = window.innerHeight;
+}
+sizeCanvas();
+window.addEventListener('resize', sizeCanvas);
+
+function burstConfetti(count) {
+  for (let i = 0; i < count; i++) {
+    bits.push({
+      x: Math.random() * cvs.width,
+      y: -20 - Math.random() * cvs.height * 0.3,
+      vx: (Math.random() - 0.5) * 3,
+      vy: 2 + Math.random() * 4,
+      size: 5 + Math.random() * 7,
+      rot: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 0.25,
+      color: COLORS[Math.floor(Math.random() * COLORS.length)]
+    });
+  }
+}
+
+function tick() {
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  bits = bits.filter(function (p) { return p.y < cvs.height + 40; });
+  bits.forEach(function (p) {
+    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.rot += p.spin;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+    ctx.restore();
+  });
+  requestAnimationFrame(tick);
+}
+tick();
+
+/* ════════════════════════════════════════════
+   BOOT
+   ════════════════════════════════════════════ */
+function startGame() {
+  initAudio();
+  state.roundIdx = 0;
+  state.qIdx = 0;
+  state.firstTry = 0;
+  state.results = [];
+  state.missedThis = false;
+  state.streak = 0;
+  state.questions = buildRound(0);
+  showScreen('screen-game');
+  renderQuestion(false);
+}
+
+el('btn-play').addEventListener('pointerdown', function (e) { e.preventDefault(); startGame(); });
+el('btn-again').addEventListener('pointerdown', function (e) { e.preventDefault(); startGame(); });
+el('btn-retry').addEventListener('pointerdown', function (e) { e.preventDefault(); hideHint(); });
+
+// Expose a little state for automated play-testing
+window.__game = state;
+</script>
+</body>
+</html>
