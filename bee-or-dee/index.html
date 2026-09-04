@@ -182,12 +182,9 @@
   .choice:active { transform: scale(.95); }
   .choice[data-key="b"] { border-color: rgba(255,197,61,.4); }
   .choice[data-key="d"] { border-color: rgba(107,201,255,.4); }
-  .choice .owner-emoji { font-size: clamp(2.2rem, 10vw, 3.2rem); line-height: 1; }
-  .choice .owner-name {
-    font-family: 'Press Start 2P', monospace;
-    font-size: clamp(.6rem, 2.8vw, .85rem);
-    letter-spacing: 1px;
-  }
+  .choice .owner-emoji { font-size: clamp(2.4rem, 11vw, 3.4rem); line-height: 1; }
+  /* round 2 picks are the picture alone, so it carries the whole button */
+  .choice .owner-emoji.big { font-size: clamp(3.6rem, 17vw, 5.2rem); }
   .choice.correct {
     background: rgba(57,255,20,.16);
     border-color: var(--good);
@@ -427,65 +424,6 @@ function audioReady() {
   return true;
 }
 
-function noiseBuffer(seconds) {
-  const len = Math.floor(actx.sampleRate * seconds);
-  const buf = actx.createBuffer(1, len, actx.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
-  return buf;
-}
-
-/* Bee: buzzy sawtooth with a wobble */
-function playBuzz() {
-  if (!audioReady()) return;
-  const t = actx.currentTime;
-  const osc = actx.createOscillator();
-  const lfo = actx.createOscillator();
-  const lfoGain = actx.createGain();
-  const filter = actx.createBiquadFilter();
-  const gain = actx.createGain();
-
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(190, t);
-  lfo.type = 'sine';
-  lfo.frequency.setValueAtTime(24, t);
-  lfoGain.gain.setValueAtTime(55, t);
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(950, t);
-
-  lfo.connect(lfoGain).connect(osc.frequency);
-  osc.connect(filter).connect(gain).connect(actx.destination);
-
-  gain.gain.setValueAtTime(0, t);
-  gain.gain.linearRampToValueAtTime(0.22, t + 0.06);
-  gain.gain.setValueAtTime(0.22, t + 0.55);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
-
-  osc.start(t); lfo.start(t);
-  osc.stop(t + 0.9); lfo.stop(t + 0.9);
-}
-
-/* Dog: two filtered noise barks */
-function playBark() {
-  if (!audioReady()) return;
-  [0, 0.22].forEach((offset, i) => {
-    const t = actx.currentTime + offset;
-    const src = actx.createBufferSource();
-    src.buffer = noiseBuffer(0.2);
-    const filter = actx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.Q.value = 3.2;
-    filter.frequency.setValueAtTime(i === 0 ? 780 : 640, t);
-    filter.frequency.exponentialRampToValueAtTime(240, t + 0.16);
-    const gain = actx.createGain();
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(0.32, t + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-    src.connect(filter).connect(gain).connect(actx.destination);
-    src.start(t); src.stop(t + 0.2);
-  });
-}
-
 function tone(freq, start, dur, type, vol) {
   const t = actx.currentTime + start;
   const osc = actx.createOscillator();
@@ -578,8 +516,8 @@ function speakLetter(letter, tail) {
    CONTENT
    ════════════════════════════════════════════ */
 const OWNER = {
-  b: { emoji: '🐝', name: 'BEE', word: 'bee', sound: 'buh', play: playBuzz },
-  d: { emoji: '🐶', name: 'DOG', word: 'dog', sound: 'duh', play: playBark }
+  b: { emoji: '🐝', word: 'bee', sound: 'buh' },
+  d: { emoji: '🐶', word: 'dog', sound: 'duh' }
 };
 
 const WORDS = {
@@ -598,7 +536,7 @@ const WORDS = {
 };
 
 const ROUNDS = [
-  { id: 'listen', label: 'ROUND 1 · LISTEN', ask: 'Which letter makes that sound?' },
+  { id: 'listen', label: 'ROUND 1 · LISTEN', ask: 'Which letter did you hear?' },
   { id: 'look',   label: 'ROUND 2 · LOOK',   ask: 'Whose letter is this?' },
   { id: 'word',   label: 'ROUND 3 · WORDS',  ask: 'Which letter starts the word?' }
 ];
@@ -699,8 +637,7 @@ function renderQuestion(replay) {
     stage.innerHTML = letterTile(q.answer, false);
     choices.innerHTML = shuffle(['b', 'd']).map(function (k) {
       return '<button class="choice" data-key="' + k + '">' +
-        '<span class="owner-emoji">' + OWNER[k].emoji + '</span>' +
-        '<span class="owner-name">' + OWNER[k].name + '</span></button>';
+        '<span class="owner-emoji big">' + OWNER[k].emoji + '</span></button>';
     }).join('');
     setTimeout(function () { speak('Whose letter is this?'); }, 300);
 
@@ -734,22 +671,23 @@ function showReveal(letter) {
       '<div class="reveal-row">' + letterTile(letter, false) +
         '<span class="reveal-emoji">' + o.emoji + '</span>' +
       '</div>' +
-      '<div class="reveal-name">' + letter + '  =  ' + o.name + '</div>' +
+      '<div class="reveal-name">' + letter + '  =  ' + o.word + '</div>' +
     '</div>';
 }
 
 function letterChoiceHTML(k) {
+  // No BEE / DOG caption: a capital B or D sitting under the lowercase letter
+  // he is trying to learn is exactly the wrong thing to show him.
   return '<button class="choice" data-key="' + k + '">' +
     letterTile(k, false) +
     '<span class="owner-emoji">' + OWNER[k].emoji + '</span>' +
-    '<span class="owner-name">' + OWNER[k].name + '</span>' +
   '</button>';
 }
 
 function playPrompt() {
-  const q = currentQuestion();
-  OWNER[q.answer].play();
-  setTimeout(function () { speak(OWNER[q.answer].sound, 0.7, 1.1); }, 700);
+  // Just the letter, said plainly. The buzz and the bark were too alike to
+  // tell apart, which made the round guesswork instead of listening.
+  speak(currentQuestion().answer, 0.6, 1.05);
 }
 
 /* ════════════════════════════════════════════
@@ -769,9 +707,8 @@ function answer(btn, key) {
     state.results[state.roundIdx * PER_ROUND + state.qIdx] = state.missedThis ? 'miss' : 'win';
     renderStars();
     showReveal(q.answer);
-    // Confirm every answer the same way: the animal, the letter, and both
-    // the sound and the letter's name.
-    setTimeout(function () { OWNER[q.answer].play(); }, 450);
+    // Confirm every answer the same way: the animal picture, the letter, and
+    // both the sound and the letter's name.
     setTimeout(function () {
       speakLetter(q.answer, PRAISE[Math.floor(Math.random() * PRAISE.length)]);
     }, 1050);
